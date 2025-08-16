@@ -1,6 +1,6 @@
 {
-  "name": "Roll-et",
-  "short_name": "Roll-et",
+  "name": "Roll'et",
+  "short_name": "Roll'et",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f172a",
