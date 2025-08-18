@@ -2,13 +2,16 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Roll‑et</title>
-    <meta name="theme-color" content="#0ea5e9" />
-    <link rel="icon" href="/roll-et/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- NOTE:
+         Do NOT add a <link rel="manifest"> here. vite-plugin-pwa injects it at build time.
+         The Vite entry must be /src/main.tsx (no /roll-et prefix); the base path is handled by Vite.
+    -->
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/roll-et/src/main.tsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
