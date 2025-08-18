@@ -48,7 +48,10 @@ export default function App() {
           setMode({ kind: 'split', first: n })
         } else {
           const isAdj = isAdjacent(first, n)
-          if(!isAdj) { setMode({ kind: 'split' }); return }
+          if(!isAdj) { 
+            setMode({ kind: 'split' })
+            return
+          }
           const pair = [first, n].sort((a,b)=>a-b)
           addBet({ type: 'split', selection: pair, amount, odds: OddsTable.split })
           setMode({ kind: 'split' })
@@ -124,7 +127,7 @@ export default function App() {
           {(['single','split','quarter','range','even','odd','high','low'] as BetType[]).map(k => (
             <button
               key={k}
-              className={(mode.kind === k ? 'active' : '')}
+              className={mode.kind === k ? 'active' : ''}
               onClick={()=> setMode(k==='split' ? {kind:'split'} : {kind: k as any})}
               title={k==='range' ? 'Click a column header to place range bet' : undefined}
             >
@@ -137,7 +140,7 @@ export default function App() {
           <button onClick={undoLast} disabled={bets.length===0}>Undo</button>
           <button onClick={clearBets} disabled={bets.length===0}>Clear</button>
           <button onClick={onRoll} disabled={rolling || totalStaked===0 || totalStaked>credits}>
-            {rolling ? 'Rolling…' : \`Roll (stake \${totalStaked})\`}
+            {rolling ? 'Rolling…' : `Roll (stake ${totalStaked})`}
           </button>
         </div>
       </section>
@@ -176,7 +179,7 @@ export default function App() {
               {history.map((h,i)=>(
                 <tr key={i}>
                   <td>{h.roll}</td>
-                  <td className={h.delta>=0?'pos':'neg'}>{h.delta>=0?\`+\${h.delta}\`:h.delta}</td>
+                  <td className={h.delta>=0?'pos':'neg'}>{h.delta>=0?`+${h.delta}`:h.delta}</td>
                   <td>{new Date(h.timestamp).toLocaleTimeString()}</td>
                 </tr>
               ))}
@@ -215,12 +218,12 @@ function isAdjacent(a:number,b:number): boolean {
 
 function describeBet(b: Bet){
   switch(b.type){
-    case 'single': return \`#\${b.selection[0]}\`
-    case 'split': return \`Split \${b.selection.join(' / ')}\`
-    case 'quarter': return \`Quarter \${b.selection.join('-')}\`
+    case 'single': return `#${b.selection[0]}`
+    case 'split': return `Split ${b.selection.join(' / ')}`
+    case 'quarter': return `Quarter ${b.selection.join('-')}`
     case 'range': {
       const col = rangeColumns.findIndex(col => col.every(n => b.selection.includes(n)))
-      return \`Range Col \${col+1} (\${b.selection.join(', ')})\`
+      return `Range Col ${col+1} (${b.selection.join(', ')})`
     }
     case 'even': return 'Even'
     case 'odd': return 'Odd'

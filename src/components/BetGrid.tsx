@@ -34,7 +34,7 @@ export function BetGrid({ grid, mode, rangeCols, splitFirst, onCellClick, onRang
                 onClick={()=>onCellClick(n)}
                 title={
                   mode==='quarter' ? 'Quarter anchor (top-left of a 2x2)' :
-                  mode==='split' ? (splitFirst ? \`Choose an adjacent cell to \${splitFirst}\` : 'Choose first cell for split') :
+                  mode==='split' ? (splitFirst ? `Choose an adjacent cell to ${splitFirst}` : 'Choose first cell for split') :
                   'Single number'
                 }
               >
