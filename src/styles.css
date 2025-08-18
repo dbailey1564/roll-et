@@ -1,0 +1,126 @@
+/* Base theme */
+:root{
+  --bg: #0b1220;
+  --panel: #111827;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --accent: #0ea5e9;
+  --pos: #22c55e;
+  --neg: #ef4444;
+}
+
+*{ box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body{
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+}
+
+.container{
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.header h1{ margin: 0 0 8px 0; font-size: 28px; }
+.credits{ color: var(--accent); }
+.header .right{ display:flex; gap:12px; align-items:center; }
+.install-btn{
+  padding: 6px 10px; border-radius: 999px; border: 1px solid #334155; background: #0f172a; color: var(--text);
+}
+.installed{ color: var(--muted); font-size: 12px; }
+.ios-hint{
+  background: #0b172d; color: var(--muted); padding: 8px 12px; border-radius: 10px; margin: 8px 0 12px; font-size: 14px;
+}
+
+.players{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+.player{
+  text-align: left;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: var(--text);
+}
+.player.active{ border-color: var(--accent); outline: 2px solid #0b3a51; }
+.player .name{ font-weight: 600; margin-bottom: 4px; }
+.player .line{ display:flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+
+.controls{
+  background: var(--panel);
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+.amount{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.amount input{ width: 96px; padding: 6px 8px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: var(--text); }
+.hint{ color: var(--muted); font-size: 12px; }
+.muted{ color: var(--muted); }
+
+.betmodes{ margin: 10px 0; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; }
+.betmodes button{
+  padding: 8px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: var(--text);
+}
+.betmodes button.active{ border-color: var(--accent); outline: 2px solid #0b3a51; }
+
+.actions{ display:flex; gap:8px; align-items:center; flex-wrap: wrap; }
+.actions button{
+  padding: 8px 10px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: var(--text);
+}
+.actions .manual-roll{ display:flex; gap:6px; align-items:center; margin-left:auto; }
+.actions .manual-roll input{ width: 120px; padding: 6px 8px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: var(--text); }
+
+.table-wrap{
+  background: var(--panel);
+  padding: 12px;
+  border-radius: 12px;
+  margin: 12px 0;
+}
+
+.betgrid .columns{
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.betgrid .colhead{
+  padding: 6px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: var(--text);
+}
+.betgrid .colhead.active{ border-color: var(--accent); }
+
+.betgrid .grid{ display: grid; gap: 6px; }
+.betgrid .row{ display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.betgrid .cell{
+  padding: 12px 0; border-radius: 12px; border: 1px solid #334155; background: #0f172a; color: var(--text);
+  text-align: center; font-variant-numeric: tabular-nums;
+}
+.betgrid .cell.pending{ outline: 2px dashed var(--accent); }
+
+.bets, .history{
+  background: var(--panel); padding: 12px; border-radius: 12px; margin-bottom:12px;
+}
+.bets ul{ list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+
+.bets.all .allwrap{ display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; }
+.bets.all .pname{ font-weight: 600; margin-bottom: 6px; }
+.bets .small{ font-size: 12px; }
+
+.history table{ width: 100%; border-collapse: collapse; }
+.history th, .history td{ text-align:left; padding: 6px 4px; border-bottom: 1px solid #1f2937; }
+.pos{ color: var(--pos); }
+.neg{ color: var(--neg); }
+
+.footer{ color: var(--muted); text-align:center; margin: 20px 0 10px; font-size: 12px; }
