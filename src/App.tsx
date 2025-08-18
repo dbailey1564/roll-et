@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react'
 import { BetGrid } from './components/BetGrid'
 import { Bet, BetType, OddsTable, makeQuarterFromAnchor, rangeColumns, resolveRound, numberGrid } from './game/engine'
+import { useInstallPrompt } from './pwa/useInstallPrompt'
 
 const STARTING_CREDITS = 1000
 const MIN_BET = 1
@@ -26,8 +27,10 @@ export default function App() {
   const [rolling, setRolling] = useState(false)
   const nextId = useRef(1)
 
+  const { canInstall, install, installed, isiOS } = useInstallPrompt()
+
   const totalStaked = bets.reduce((a,b)=>a+b.amount, 0)
-  const canPlace = useMemo(()=> {
+  const canPlace = React.useMemo(()=> {
     return amount >= MIN_BET && amount <= MAX_BET && (totalStaked + amount) <= MAX_TOTAL_PER_ROUND && amount <= credits
   }, [amount, totalStaked, credits])
 
@@ -48,10 +51,7 @@ export default function App() {
           setMode({ kind: 'split', first: n })
         } else {
           const isAdj = isAdjacent(first, n)
-          if(!isAdj) { 
-            setMode({ kind: 'split' })
-            return
-          }
+          if(!isAdj) { setMode({ kind: 'split' }); return }
           const pair = [first, n].sort((a,b)=>a-b)
           addBet({ type: 'split', selection: pair, amount, odds: OddsTable.split })
           setMode({ kind: 'split' })
@@ -83,7 +83,7 @@ export default function App() {
   }
 
   const onRangeClick = (colIndex: number) => {
-    if(mode.kind !== 'range' || !canPlace) return
+    if((mode as any).kind !== 'range' || !canPlace) return
     addBet({ type: 'range', selection: rangeColumns[colIndex], amount, odds: OddsTable.range })
   }
 
@@ -113,8 +113,22 @@ export default function App() {
     <div className="container">
       <header className="header">
         <h1>Roll-et</h1>
-        <div className="credits">Credits: <strong>{credits}</strong></div>
+        <div className="right">
+          {canInstall && (
+            <button className="install-btn" onClick={async ()=>{ await install() }}>
+              Install
+            </button>
+          )}
+          {installed && <span className="installed">Installed</span>}
+          <div className="credits">Credits: <strong>{credits}</strong></div>
+        </div>
       </header>
+
+      {isiOS && !installed && (
+        <div className="ios-hint">
+          On iPhone/iPad: tap <strong>Share</strong> → <strong>Add to Home Screen</strong> to install.
+        </div>
+      )}
 
       <section className="controls">
         <div className="amount">
@@ -127,11 +141,11 @@ export default function App() {
           {(['single','split','quarter','range','even','odd','high','low'] as BetType[]).map(k => (
             <button
               key={k}
-              className={mode.kind === k ? 'active' : ''}
+              className={(mode as any).kind === k ? 'active' : ''}
               onClick={()=> setMode(k==='split' ? {kind:'split'} : {kind: k as any})}
               title={k==='range' ? 'Click a column header to place range bet' : undefined}
             >
-              {labelFor(k)}
+              {labelFor(k as any)}
             </button>
           ))}
         </div>
@@ -193,7 +207,9 @@ export default function App() {
   )
 }
 
-function labelFor(t: BetType) {
+type BetTypeL = BetType
+
+function labelFor(t: BetTypeL) {
   switch(t){
     case 'single': return 'Single (18:1)'
     case 'split': return 'Split (8:1)'

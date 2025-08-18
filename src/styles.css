@@ -94,3 +94,23 @@ body{
 .neg{ color: var(--neg); }
 
 .footer{ color: var(--muted); text-align:center; margin: 20px 0 10px; font-size: 12px; }
+/* Install button + iOS hint */
+.header .right{
+  display:flex; gap:12px; align-items:center;
+}
+.install-btn{
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: var(--text);
+}
+.installed{ color: var(--muted); font-size: 12px; }
+.ios-hint{
+  background: #0b172d;
+  color: var(--muted);
+  padding: 8px 12px;
+  border-radius: 10px;
+  margin: 8px 0 12px;
+  font-size: 14px;
+}
