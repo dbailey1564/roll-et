@@ -43,9 +43,9 @@ export default function App() {
 
   const DEFAULT_BET = 1
   const [amount, setAmount] = React.useState<number>(() => {
-    const saved = localStorage.getItem('bet')
-    const n = saved ? Number(saved) : DEFAULT_BET
-    return Number.isFinite(n) ? clampInt(n, MIN_BET, MAX_BET) : DEFAULT_BET
+      const saved = localStorage.getItem('bet')
+      const n = saved ? Number(saved) : DEFAULT_BET
+      return Number.isFinite(n) ? clampInt(n, MIN_BET, PER_ROUND_POOL) : DEFAULT_BET
   })
   React.useEffect(()=>{ localStorage.setItem('bet', String(amount)) }, [amount])
 
@@ -58,8 +58,14 @@ export default function App() {
   const { canInstall, install, installed, isiOS } = useInstallPrompt()
 
   const active = players.find(p => p.id === activePid)!
+  const maxForActive = Math.max(MIN_BET, active.pool)
+
+  // keep amount within the active player's remaining pool
+  React.useEffect(() => {
+    setAmount(a => clampInt(a, MIN_BET, maxForActive))
+  }, [activePid, active.pool])
   const totalStake = (p: Player) => p.bets.reduce((a,b)=>a+b.amount, 0)
-  const canPlace = (p: Player) => roundState==='open' && amount>=MIN_BET && amount<=MAX_BET && amount<=p.pool
+  const canPlace = (p: Player) => roundState==='open' && amount>=MIN_BET && amount<=p.pool
 
   // --- Betting operations ---
   const addBetFor = (pid: number, bet: Omit<Bet, 'id'>) => {
@@ -215,12 +221,13 @@ export default function App() {
       <section className="controls">
         <div className="amount">
           <label>Bet: </label>
-          <input
-            type="number" min={MIN_BET} max={MAX_BET} step={1}
-            value={amount}
-            onChange={(e)=> setAmount(clampInt(e.target.valueAsNumber || MIN_BET, MIN_BET, MAX_BET))}
-          />
-          <span className="hint">(min {MIN_BET}, max {MAX_BET}, per-player pool {PER_ROUND_POOL})</span>
+            <input
+              type="number" min={MIN_BET} max={maxForActive} step={1}
+              value={amount}
+              onChange={(e)=> setAmount(clampInt(e.target.valueAsNumber || MIN_BET, MIN_BET, maxForActive))}
+              disabled={active.pool === 0}
+            />
+ <span className="hint">(min {MIN_BET}, remaining pool {active.pool})</span>
           <span className="muted"> | Active: {players.find(p=>p.id===activePid)?.name} (pool {players.find(p=>p.id===activePid)?.pool})</span>
         </div>
 
