@@ -212,13 +212,13 @@ export default function App() {
   return (
     <div className="container">
       <header className="header">
-        <div className="left"><Link className="link-btn" to="/stats">Stats</Link></div>
+        <div className="left" />
         <h1>Roll-et</h1>
-        <div className="right">
-          {canInstall && <button className="install-btn" onClick={()=>install()}>Install</button>}
-          {installed && <span className="installed">Installed</span>}
-          <div className="credits">Round: <span className={`roundstate ${roundState}`}>{roundState.toUpperCase()}</span></div>
-        </div>
+          <div className="right">
+            <div className="credits">
+              Round: <span className={`roundstate ${roundState}`}>{roundState.toUpperCase()}</span>
+            </div>
+          </div>
       </header>
 
       {isiOS && !installed && (
@@ -338,7 +338,16 @@ export default function App() {
         )}
       </section>
 
-      <footer className="footer">© Roll-et</footer>
+      <footer className="footer-bar">
+        <div className="left">
+          {canInstall && <button className="install-btn" onClick={install}>Install</button>}
+          {installed && <span className="installed">Installed</span>}
+        </div>
+        <div className="center">© Kraken Consulting, LLC (Dev Team)</div>
+        <div className="right">
+          <Link className="link-btn" to="/stats">Stats</Link>
+        </div>
+      </footer>
     </div>
   )
 }

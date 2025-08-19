@@ -1,12 +1,13 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { useInstallPrompt } from './pwa/useInstallPrompt'
 
 type StatsStore = {
   rounds: number
   hits: number[]
   banks: Record<number, number>
 }
-
+const { canInstall, install, installed } = useInstallPrompt()
 function loadStats(): StatsStore {
   try {
     const raw = localStorage.getItem('roll_et_stats')
@@ -28,10 +29,10 @@ export default function Stats(){
   return (
     <div className="container">
       <header className="header">
-        <div className="left"><Link className="link-btn" to="/">← Back</Link></div>
-        <h1>Roll-et Stats</h1>
-        <div className="right" />
-      </header>
+  <div className="left" />
+  <h1>Roll-et Stats</h1>
+  <div className="right" />
+</header>
 
       <section className="controls">
         <div className="amount">
@@ -65,7 +66,16 @@ export default function Stats(){
         </ul>
       </section>
 
-      <footer className="footer">© Roll-et</footer>
+      <footer className="footer-bar">
+  <div className="left">
+    {canInstall && <button className="install-btn" onClick={install}>Install</button>}
+    {installed && <span className="installed">Installed</span>}
+  </div>
+  <div className="center">© Kraken Consulting, LLC (Dev Team)</div>
+  <div className="right">
+    <Link className="link-btn" to="/">Game</Link>
+  </div>
+</footer>
     </div>
   )
 }
