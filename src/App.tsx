@@ -1,17 +1,17 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import { BetGrid } from './components/BetGrid'
-import { Bet, BetType, OddsTable, makeQuarterFromAnchor, rangeColumns, resolveRound, numberGrid } from './game/engine'
+import { Bet, BetType, OddsTable, makeQuarterFromAnchor, resolveRound, numberGrid } from './game/engine'
 import { useInstallPrompt } from './pwa/useInstallPrompt'
 
 const MIN_BET = 1
-const MAX_BET = 100
-const PER_ROUND_POOL = 8 // max credits per player per round
+const PER_ROUND_POOL = 8
+const CREDIT_VALUE = 0.25
 
 type BetMode =
   | { kind: 'single' }
   | { kind: 'split'; first?: number }
   | { kind: 'quarter' }
-  | { kind: 'range' }
   | { kind: 'high' }
   | { kind: 'low' }
   | { kind: 'even' }
@@ -23,8 +23,8 @@ interface Player {
   id: number
   name: string
   bets: Bet[]
-  pool: number   // remaining this round (starts 8 → 0)
-  bank: number   // cumulative across rounds
+  pool: number
+  bank: number
 }
 
 export default function App() {
@@ -43,9 +43,9 @@ export default function App() {
 
   const DEFAULT_BET = 1
   const [amount, setAmount] = React.useState<number>(() => {
-      const saved = localStorage.getItem('bet')
-      const n = saved ? Number(saved) : DEFAULT_BET
-      return Number.isFinite(n) ? clampInt(n, MIN_BET, PER_ROUND_POOL) : DEFAULT_BET
+    const saved = localStorage.getItem('bet')
+    const n = saved ? Number(saved) : DEFAULT_BET
+    return Number.isFinite(n) ? clampInt(n, MIN_BET, PER_ROUND_POOL) : DEFAULT_BET
   })
   React.useEffect(()=>{ localStorage.setItem('bet', String(amount)) }, [amount])
 
@@ -54,20 +54,40 @@ export default function App() {
   const [roundState, setRoundState] = React.useState<RoundState>('open')
   const [enteredRoll, setEnteredRoll] = React.useState<number | ''>('')
   const [history, setHistory] = React.useState<Array<{ roll: number, deltas: Record<number, number>, time: number }>>([])
+  const [winning, setWinning] = React.useState<number | null>(null)
 
   const { canInstall, install, installed, isiOS } = useInstallPrompt()
 
   const active = players.find(p => p.id === activePid)!
+  const totalStake = (p: Player) => p.bets.reduce((a,b)=>a+b.amount, 0)
   const maxForActive = Math.max(MIN_BET, active.pool)
+  const canPlace = (p: Player) => roundState==='open' && amount>=MIN_BET && amount<=p.pool
 
-  // keep amount within the active player's remaining pool
   React.useEffect(() => {
     setAmount(a => clampInt(a, MIN_BET, maxForActive))
   }, [activePid, active.pool])
-  const totalStake = (p: Player) => p.bets.reduce((a,b)=>a+b.amount, 0)
-  const canPlace = (p: Player) => roundState==='open' && amount>=MIN_BET && amount<=p.pool
 
-  // --- Betting operations ---
+  const covered = React.useMemo(() => {
+    const s = new Set<number>()
+    for(const p of players){
+      for(const b of p.bets){
+        switch(b.type){
+          case 'single': case 'split': case 'quarter':
+            b.selection.forEach(n => s.add(n)); break
+          case 'even':
+            for(let n=2;n<=20;n+=2) s.add(n); break
+          case 'odd':
+            for(let n=1;n<=19;n+=2) s.add(n); break
+          case 'high':
+            for(let n=11;n<=20;n++) s.add(n); break
+          case 'low':
+            for(let n=1;n<=10;n++) s.add(n); break
+        }
+      }
+    }
+    return s
+  }, [players])
+
   const addBetFor = (pid: number, bet: Omit<Bet, 'id'>) => {
     setPlayers(prev => prev.map(p => {
       if(p.id !== pid) return p
@@ -120,7 +140,11 @@ export default function App() {
         if(q) addBetFor(p.id, { type:'quarter', selection: q, amount, odds: OddsTable.quarter })
         break
       }
-      case 'range':
+      case 'high':
+        addBetFor(p.id, { type:'high', selection: [], amount, odds: OddsTable.highLow })
+        break
+      case 'low':
+        addBetFor(p.id, { type:'low', selection: [], amount, odds: OddsTable.highLow })
         break
       case 'even':
         addBetFor(p.id, { type:'even', selection: [], amount, odds: OddsTable.evenOdd })
@@ -128,26 +152,10 @@ export default function App() {
       case 'odd':
         addBetFor(p.id, { type:'odd', selection: [], amount, odds: OddsTable.evenOdd })
         break
-      case 'high':
-        addBetFor(p.id, { type:'high', selection: [], amount, odds: OddsTable.highLow })
-        break
-      case 'low':
-        addBetFor(p.id, { type:'low', selection: [], amount, odds: OddsTable.highLow })
-        break
     }
   }
 
-  const onRangeClick = (colIndex: number) => {
-    if(roundState!=='open') return
-    const p = active
-    if(mode.kind!=='range' || !canPlace(p)) return
-    addBetFor(p.id, { type:'range', selection: rangeColumns[colIndex], amount, odds: OddsTable.range })
-  }
-
-  // --- Round flow ---
-  const lockRound = () => {
-    setRoundState('locked')
-  }
+  const lockRound = () => { setRoundState('locked') }
 
   const settleRound = () => {
     if(roundState!=='locked') return
@@ -163,14 +171,27 @@ export default function App() {
       return { ...p, bank: p.bank + delta }
     })
 
+    try {
+      const raw = localStorage.getItem('roll_et_stats')
+      const st = raw ? JSON.parse(raw) : { rounds:0, hits: Array(21).fill(0), banks: {} }
+      st.rounds = (st.rounds || 0) + 1
+      if(!Array.isArray(st.hits) || st.hits.length<21) st.hits = Array(21).fill(0)
+      st.hits[roll] = (st.hits[roll] || 0) + 1
+      st.banks = st.banks || {}
+      nextPlayers.forEach(p => { st.banks[p.id] = p.bank })
+      localStorage.setItem('roll_et_stats', JSON.stringify(st))
+    } catch {}
+
     setPlayers(nextPlayers)
     setHistory(h => [{ roll, deltas, time: Date.now() }, ...h].slice(0, 30))
+    setWinning(roll)
     setRoundState('settled')
   }
 
   const newRound = () => {
     setPlayers(prev => prev.map(p => ({ ...p, pool: PER_ROUND_POOL, bets: [] })))
     setEnteredRoll('')
+    setWinning(null)
     setRoundState('open')
   }
 
@@ -178,11 +199,7 @@ export default function App() {
     switch(b.type){
       case 'single': return `#${b.selection[0]}`
       case 'split': return `Split ${b.selection.join(' / ')}`
-      case 'quarter': return `Quarter ${b.selection.join('-')}`
-      case 'range': {
-        const col = rangeColumns.findIndex(col => col.every(n => b.selection.includes(n)))
-        return `Range Col ${col+1} (${b.selection.join(', ')})`
-      }
+      case 'quarter': return `Corners ${b.selection.join('-')}`
       case 'even': return 'Even'
       case 'odd': return 'Odd'
       case 'high': return 'High 11–20'
@@ -195,6 +212,7 @@ export default function App() {
   return (
     <div className="container">
       <header className="header">
+        <div className="left"><Link className="link-btn" to="/stats">Stats</Link></div>
         <h1>Roll-et</h1>
         <div className="right">
           {canInstall && <button className="install-btn" onClick={()=>install()}>Install</button>}
@@ -212,8 +230,8 @@ export default function App() {
           <button key={p.id} className={'player ' + (p.id===activePid?'active':'')} onClick={()=>setActivePid(p.id)}>
             <div className="name">{p.name}</div>
             <div className="line"><span>Pool</span><strong>{p.pool}/{PER_ROUND_POOL}</strong></div>
-            <div className="line"><span>Bank</span><strong className={p.bank>=0?'pos':'neg'}>{p.bank>=0?`+${p.bank}`:p.bank}</strong></div>
-            <div className="line"><span>Stake</span><strong>{p.bets.reduce((a,b)=>a+b.amount,0)}</strong></div>
+            <div className="line"><span>Bank</span><strong className={p.bank>=0?'pos':'neg'}>{fmtUSDSign(p.bank)}</strong></div>
+            <div className="line"><span>Stake</span><strong>{fmtUSD(totalStake(p))}</strong></div>
           </button>
         ))}
       </section>
@@ -221,23 +239,22 @@ export default function App() {
       <section className="controls">
         <div className="amount">
           <label>Bet: </label>
-            <input
-              type="number" min={MIN_BET} max={maxForActive} step={1}
-              value={amount}
-              onChange={(e)=> setAmount(clampInt(e.target.valueAsNumber || MIN_BET, MIN_BET, maxForActive))}
-              disabled={active.pool === 0}
-            />
- <span className="hint">(min {MIN_BET}, remaining pool {active.pool})</span>
-          <span className="muted"> | Active: {players.find(p=>p.id===activePid)?.name} (pool {players.find(p=>p.id===activePid)?.pool})</span>
+          <input
+            type="number" min={MIN_BET} max={maxForActive} step={1}
+            value={amount}
+            onChange={(e)=> setAmount(clampInt(e.target.valueAsNumber || MIN_BET, MIN_BET, maxForActive))}
+            disabled={active.pool === 0}
+          />
+          <span className="hint">(min {MIN_BET}, remaining pool {active.pool})</span>
+          <span className="active-name">Active: {players.find(p=>p.id===activePid)?.name}</span>
         </div>
 
         <div className="betmodes">
-          {(['single','split','quarter','range','even','odd','high','low'] as BetType[]).map(k => (
+          {(['single','split','quarter','even','odd','high','low'] as BetType[]).map(k => (
             <button
               key={k}
               className={(mode as any).kind === k ? 'active' : ''}
               onClick={()=> setMode(k==='split' ? {kind:'split'} : {kind: k as any})}
-              title={k==='range' ? 'Click a column header to place range bet' : undefined}
               disabled={roundState!=='open' || !canPlace(players.find(p=>p.id===activePid)!)}>
               {labelFor(k as any)}
             </button>
@@ -270,10 +287,10 @@ export default function App() {
         <BetGrid
           grid={numberGrid}
           mode={(mode as any).kind}
-          rangeCols={rangeColumns}
           onCellClick={onCellClick}
-          onRangeClick={onRangeClick}
           splitFirst={(mode as any).kind==='split' ? (mode as any).first : undefined}
+          covered={covered}
+          winning={winning}
         />
       </section>
 
@@ -286,33 +303,11 @@ export default function App() {
                 <span>{describeBet(b)}</span>
                 <span> × {b.amount} → </span>
                 <span className="muted">{b.odds}:1</span>
-                <span> =&nbsp;<strong>{potential(b)}</strong></span>
+                <span> =&nbsp;<strong>{fmtUSD(b.amount * b.odds)}</strong></span>
               </li>
             ))}
           </ul>
         )}
-      </section>
-
-      <section className="bets all">
-        <h3>All Players (locked state snapshot)</h3>
-        <div className="allwrap">
-          {players.map(p => (
-            <div className="pcol" key={p.id}>
-              <div className="pname">{p.name}</div>
-              {p.bets.length===0 ? <div className="muted small">No bets</div> : (
-                <ul>
-                  {p.bets.map(b => (
-                    <li key={b.id}>
-                      <span>{describeBet(b)}</span>
-                      <span> × {b.amount}</span>
-                      <span className="muted"> (→ {potential(b)})</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          ))}
-        </div>
       </section>
 
       <section className="history">
@@ -333,7 +328,7 @@ export default function App() {
                   {players.map(p => {
                     const d = h.deltas[p.id] ?? 0
                     const cls = d>=0 ? 'pos' : 'neg'
-                    return <td key={p.id} className={cls}>{d>=0?`+${d}`:d}</td>
+                    return <td key={p.id} className={cls}>{fmtUSDSign(d)}</td>
                   })}
                   <td>{new Date(h.time).toLocaleTimeString()}</td>
                 </tr>
@@ -352,8 +347,7 @@ function labelFor(t: BetType) {
   switch(t){
     case 'single': return 'Single (18:1)'
     case 'split': return 'Split (8:1)'
-    case 'quarter': return 'Quarter (3:1)'
-    case 'range': return 'Range (2:1)'
+    case 'quarter': return 'Corners (3:1)'
     case 'even': return 'Even (1:1)'
     case 'odd': return 'Odd (1:1)'
     case 'high': return 'High 11–20 (1:1)'
@@ -375,4 +369,14 @@ function isAdjacent(a:number,b:number): boolean {
   const A = pos(a), B = pos(b)
   const dr = Math.abs(A.r-B.r), dc = Math.abs(A.c-B.c)
   return (dr+dc===1)
+}
+
+function fmtUSD(credits: number): string {
+  const dollars = credits * CREDIT_VALUE
+  return dollars.toLocaleString(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2 })
+}
+function fmtUSDSign(credits: number): string {
+  const dollars = credits * CREDIT_VALUE
+  const str = Math.abs(dollars).toLocaleString(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2 })
+  return (dollars >= 0 ? '+' : '−') + str
 }

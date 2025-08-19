@@ -1,4 +1,4 @@
-/* Base theme */
+/* Theme */
 :root{
   --bg: #0b1220;
   --panel: #111827;
@@ -7,6 +7,8 @@
   --accent: #0ea5e9;
   --pos: #22c55e;
   --neg: #ef4444;
+  --gold: #facc15;
+  --winbg: #065f46;
 }
 
 *{ box-sizing: border-box; }
@@ -18,21 +20,20 @@ body{
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
 }
 
-.container{
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 16px;
-}
+.container{ max-width: 980px; margin: 0 auto; padding: 16px; }
 
 .header{
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   margin-bottom: 8px;
 }
-.header h1{ margin: 0 0 8px 0; font-size: 28px; }
-.credits{ color: var(--accent); }
-.header .right{ display:flex; gap:12px; align-items:center; }
+.header h1{ margin: 0; font-size: 28px; text-align: center; }
+.header .left{ justify-self: start; }
+.header .right{ justify-self: end; display:flex; gap:12px; align-items:center; }
+.link-btn{
+  padding: 6px 10px; border-radius: 999px; border: 1px solid #334155; background: #0f172a; color: var(--text); text-decoration: none;
+}
 .install-btn{
   padding: 6px 10px; border-radius: 999px; border: 1px solid #334155; background: #0f172a; color: var(--text);
 }
@@ -59,68 +60,38 @@ body{
 .player .name{ font-weight: 600; margin-bottom: 4px; }
 .player .line{ display:flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
 
-.controls{
-  background: var(--panel);
-  padding: 12px;
-  border-radius: 12px;
-  margin-bottom: 12px;
-}
+.controls{ background: var(--panel); padding: 12px; border-radius: 12px; margin-bottom: 12px; }
 .amount{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .amount input{ width: 96px; padding: 6px 8px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: var(--text); }
 .hint{ color: var(--muted); font-size: 12px; }
-.muted{ color: var(--muted); }
-
-.betmodes{ margin: 10px 0; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; }
-.betmodes button{
-  padding: 8px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: var(--text);
-}
-.betmodes button.active{ border-color: var(--accent); outline: 2px solid #0b3a51; }
+.active-name{ color: #86efac; }
 
 .actions{ display:flex; gap:8px; align-items:center; flex-wrap: wrap; }
-.actions button{
-  padding: 8px 10px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: var(--text);
-}
+.actions button{ padding: 8px 10px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: var(--text); }
 .actions .manual-roll{ display:flex; gap:6px; align-items:center; margin-left:auto; }
 .actions .manual-roll input{ width: 120px; padding: 6px 8px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: var(--text); }
 
-.table-wrap{
-  background: var(--panel);
-  padding: 12px;
-  border-radius: 12px;
-  margin: 12px 0;
-}
-
-.betgrid .columns{
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
-  margin-bottom: 8px;
-}
-.betgrid .colhead{
-  padding: 6px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: var(--text);
-}
-.betgrid .colhead.active{ border-color: var(--accent); }
+.table-wrap{ background: var(--panel); padding: 12px; border-radius: 12px; margin: 12px 0; }
 
 .betgrid .grid{ display: grid; gap: 6px; }
 .betgrid .row{ display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .betgrid .cell{
-  padding: 12px 0; border-radius: 12px; border: 1px solid #334155; background: #0f172a; color: var(--text);
+  padding: 12px 0; border-radius: 12px; border: 2px solid #334155; background: #0f172a; color: var(--text);
   text-align: center; font-variant-numeric: tabular-nums;
 }
 .betgrid .cell.pending{ outline: 2px dashed var(--accent); }
+.betgrid .cell.covered{ border-color: var(--gold); box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.2) inset; }
+.betgrid .cell.winning{ background: var(--winbg); border-color: #10b981; }
 
-.bets, .history{
-  background: var(--panel); padding: 12px; border-radius: 12px; margin-bottom:12px;
-}
+.bets, .history{ background: var(--panel); padding: 12px; border-radius: 12px; margin-bottom:12px; }
 .bets ul{ list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
-
-.bets.all .allwrap{ display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; }
-.bets.all .pname{ font-weight: 600; margin-bottom: 6px; }
-.bets .small{ font-size: 12px; }
-
 .history table{ width: 100%; border-collapse: collapse; }
 .history th, .history td{ text-align:left; padding: 6px 4px; border-bottom: 1px solid #1f2937; }
-.pos{ color: var(--pos); }
-.neg{ color: var(--neg); }
+.pos{ color: var(--pos); } .neg{ color: var(--neg); }
+
+.hits-grid{ display:grid; grid-template-columns: repeat(5, 1fr); gap:8px; }
+.hit-cell{ background:#0f172a; border:1px solid #334155; border-radius:10px; padding:8px; text-align:center; }
+.hit-cell .n{ font-size:12px; color:var(--muted); }
+.hit-cell .c{ font-weight:700; margin-top:2px; }
 
 .footer{ color: var(--muted); text-align:center; margin: 20px 0 10px; font-size: 12px; }
