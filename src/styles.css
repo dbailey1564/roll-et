@@ -41,7 +41,11 @@ body{
 .ios-hint{
   background: #0b172d; color: var(--muted); padding: 8px 12px; border-radius: 10px; margin: 8px 0 12px; font-size: 14px;
 }
-
+.credits { color: var(--text); }          
+.roundstate { font-weight: 700; }
+.roundstate.open { color: var(--pos); }    
+.roundstate.locked { color: var(--neg); }  
+.roundstate.settled { color: var(--accent); } 
 .players{
   display: grid;
   grid-template-columns: repeat(4, minmax(0,1fr));

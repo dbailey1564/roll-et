@@ -217,7 +217,7 @@ export default function App() {
         <div className="right">
           {canInstall && <button className="install-btn" onClick={()=>install()}>Install</button>}
           {installed && <span className="installed">Installed</span>}
-          <div className="credits">Round: <strong>{roundState.toUpperCase()}</strong></div>
+          <div className="credits">Round: <span className={`roundstate ${roundState}`}>{roundState.toUpperCase()}</span></div>
         </div>
       </header>
 
