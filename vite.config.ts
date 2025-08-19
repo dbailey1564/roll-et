@@ -8,6 +8,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+         cleanupOutdatedCaches: true,
+         clientsClaim: true,
+         skipWaiting: true,
+      },
       includeAssets: ['icons/icon-192.png','icons/icon-512.png','icons/maskable-192.png','icons/maskable-512.png','favicon.svg'],
       manifest: {
         name: 'Roll‑et',
