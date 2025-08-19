@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Roll-et</title>
     <meta name="theme-color" content="#0ea5e9" />
-    <link rel="manifest" href="/roll-et/manifest.webmanifest" />
-    <link rel="icon" href="/roll-et/favicon.svg" />
     <script>
       // SPA deep-link restore when 404.html bounced us here
       (function(){
@@ -23,6 +21,7 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/roll-et/src/main.tsx"></script>
+    <!-- IMPORTANT: entry must be /src/main.tsx for Vite build; do NOT prefix with /roll-et -->
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
