@@ -7,14 +7,14 @@ type StatsStore = {
   hits: number[]
   banks: Record<number, number>
 }
-const { canInstall, install, installed } = useInstallPrompt()
+
 function loadStats(): StatsStore {
   try {
     const raw = localStorage.getItem('roll_et_stats')
-    if(!raw) return { rounds: 0, hits: Array(21).fill(0), banks: {} }
+    if (!raw) return { rounds: 0, hits: Array(21).fill(0), banks: {} }
     const parsed = JSON.parse(raw)
-    const hits = Array.isArray(parsed.hits) && parsed.hits.length>=21 ? parsed.hits : Array(21).fill(0)
-    const banks = typeof parsed.banks==='object' && parsed.banks ? parsed.banks : {}
+    const hits = Array.isArray(parsed.hits) && parsed.hits.length >= 21 ? parsed.hits : Array(21).fill(0)
+    const banks = typeof parsed.banks === 'object' && parsed.banks ? parsed.banks : {}
     const rounds = Number(parsed.rounds) || 0
     return { rounds, hits, banks }
   } catch {
@@ -22,17 +22,20 @@ function loadStats(): StatsStore {
   }
 }
 
-export default function Stats(){
+export default function Stats() {
   const [stats] = React.useState<StatsStore>(loadStats())
-  const totalHits = stats.hits.slice(1).reduce((a,b)=>a+b, 0)
+  const totalHits = stats.hits.slice(1).reduce((a, b) => a + b, 0)
+
+  // ✅ hooks belong inside components
+  const { canInstall, install, installed } = useInstallPrompt()
 
   return (
     <div className="container">
       <header className="header">
-  <div className="left" />
-  <h1>Roll-et Stats</h1>
-  <div className="right" />
-</header>
+        <div className="left" />
+        <h1>Roll-et Stats</h1>
+        <div className="right" />
+      </header>
 
       <section className="controls">
         <div className="amount">
@@ -44,9 +47,9 @@ export default function Stats(){
       <section className="bets">
         <h3>Number Hit Frequency (1–20)</h3>
         <div className="hits-grid">
-          {Array.from({length:20}, (_,i)=>i+1).map(n => (
+          {Array.from({ length: 20 }, (_, i) => i + 1).map(n => (
             <div key={n} className="hit-cell">
-              <div className="n">{String(n).padStart(2,'0')}</div>
+              <div className="n">{String(n).padStart(2, '0')}</div>
               <div className="c">{stats.hits[n] || 0}</div>
             </div>
           ))}
@@ -56,7 +59,7 @@ export default function Stats(){
       <section className="bets">
         <h3>Player Banks (credits)</h3>
         <ul>
-          {[1,2,3,4].map(pid => (
+          {[1, 2, 3, 4].map(pid => (
             <li key={pid}>
               <span>P{pid}</span>
               <span> — </span>
@@ -67,15 +70,15 @@ export default function Stats(){
       </section>
 
       <footer className="footer-bar">
-  <div className="left">
-    {canInstall && <button className="install-btn" onClick={install}>Install</button>}
-    {installed && <span className="installed">Installed</span>}
-  </div>
-  <div className="center">© Kraken Consulting, LLC (Dev Team)</div>
-  <div className="right">
-    <Link className="link-btn" to="/">Game</Link>
-  </div>
-</footer>
+        <div className="left">
+          {canInstall && <button className="install-btn" onClick={() => install()}>Install</button>}
+          {installed && <span className="installed">Installed</span>}
+        </div>
+        <div className="center">© Kraken Consulting, LLC (Dev Team)</div>
+        <div className="right">
+          <Link className="link-btn" to="/">Game</Link>
+        </div>
+      </footer>
     </div>
   )
 }
