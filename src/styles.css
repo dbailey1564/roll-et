@@ -73,6 +73,29 @@ body{
 
 .table-wrap{ background: var(--panel); padding: 12px; border-radius: 12px; margin: 12px 0; }
 
+.betmodes{
+  margin: 10px 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr)); /* mobile */
+  gap: 6px;
+}
+.betmodes button{
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: var(--text);
+  appearance: none;           
+  -webkit-appearance: none;
+}
+.betmodes button.active{
+  border-color: var(--accent);
+  outline: 2px solid #0b3a51;
+}
+.betmodes button:disabled{ opacity: .5; }
+@media (min-width: 640px){
+  .betmodes{ grid-template-columns: repeat(4, minmax(0,1fr)); }
+}
 .betgrid .grid{ display: grid; gap: 6px; }
 .betgrid .row{ display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .betgrid .cell{
