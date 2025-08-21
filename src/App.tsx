@@ -1,44 +1,21 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
-import { BetGrid } from './components/BetGrid'
-import { Bet, BetType, OddsTable, makeQuarterFromAnchor, resolveRound, numberGrid } from './game/engine'
+import { BetBoard } from './components/BetBoard'
+import { BetControls } from './components/BetControls'
+import { HistorySection } from './components/HistorySection'
+import { FooterBar } from './components/FooterBar'
+import { Bet, OddsTable, makeQuarterFromAnchor, resolveRound, numberGrid } from './game/engine'
 import { useInstallPrompt } from './pwa/useInstallPrompt'
+import type { BetMode, Player } from './types'
+import { clampInt, fmtUSD, fmtUSDSign } from './utils'
+import { useBetActions } from './hooks/useBetActions'
+import { usePlayers, useRoundState, useStats, PER_ROUND_POOL } from './context/GameContext'
 
 const MIN_BET = 1
-const PER_ROUND_POOL = 8
-const CREDIT_VALUE = 0.25
-
-type BetMode =
-  | { kind: 'single' }
-  | { kind: 'split'; first?: number }
-  | { kind: 'quarter' }
-  | { kind: 'high' }
-  | { kind: 'low' }
-  | { kind: 'even' }
-  | { kind: 'odd' }
-
-type RoundState = 'open' | 'locked' | 'settled'
-
-interface Player {
-  id: number
-  name: string
-  bets: Bet[]
-  pool: number
-  bank: number
-}
 
 export default function App() {
-  const playersInit: Player[] = React.useMemo(() => (
-    [1,2,3,4].map(i => ({
-      id: i,
-      name: `P${i}`,
-      bets: [],
-      pool: PER_ROUND_POOL,
-      bank: 0,
-    }))
-  ), [])
-
-  const [players, setPlayers] = React.useState<Player[]>(playersInit)
+  const { players, setPlayers } = usePlayers()
+  const { roundState, setRoundState } = useRoundState()
+  const { setStats } = useStats()
   const [activePid, setActivePid] = React.useState<number>(1)
 
   const DEFAULT_BET = 1
@@ -51,7 +28,6 @@ export default function App() {
 
   const [mode, setMode] = React.useState<BetMode>({ kind: 'single' })
 
-  const [roundState, setRoundState] = React.useState<RoundState>('open')
   const [enteredRoll, setEnteredRoll] = React.useState<number | ''>('')
   const [history, setHistory] = React.useState<Array<{ roll: number, deltas: Record<number, number>, time: number }>>([])
   const [winning, setWinning] = React.useState<number | null>(null)
@@ -88,32 +64,13 @@ export default function App() {
     return s
   }, [players])
 
-  const addBetFor = (pid: number, bet: Omit<Bet, 'id'>) => {
-    setPlayers(prev => prev.map(p => {
-      if(p.id !== pid) return p
-      if(!canPlace(p)) return p
-      const id = String(Date.now()) + '-' + Math.random().toString(36).slice(2,7)
-      return { ...p, bets: [...p.bets, { ...bet, id }], pool: p.pool - bet.amount }
-    }))
-  }
-
-  const undoLast = (pid: number) => {
-    if(roundState!=='open') return
-    setPlayers(prev => prev.map(p => {
-      if(p.id !== pid) return p
-      const last = p.bets[p.bets.length-1]
-      if(!last) return p
-      const bets = p.bets.slice(0, -1)
-      return { ...p, bets, pool: p.pool + last.amount }
-    }))
-    if((mode as any).kind==='split' && (mode as any).first){ setMode({kind:'split'}) }
-  }
-
-  const clearBets = (pid: number) => {
-    if(roundState!=='open') return
-    setPlayers(prev => prev.map(p => p.id===pid ? ({ ...p, pool: PER_ROUND_POOL, bets: [] }) : p))
-    if((mode as any).kind==='split' && (mode as any).first){ setMode({kind:'split'}) }
-  }
+  const { addBetFor, undoLast, clearBets } = useBetActions({
+    roundState,
+    setPlayers,
+    mode,
+    setMode,
+    perRoundPool: PER_ROUND_POOL,
+  })
 
   const onCellClick = (n: number) => {
     if(roundState!=='open') return
@@ -171,16 +128,13 @@ export default function App() {
       return { ...p, bank: p.bank + delta }
     })
 
-    try {
-      const raw = localStorage.getItem('roll_et_stats')
-      const st = raw ? JSON.parse(raw) : { rounds:0, hits: Array(21).fill(0), banks: {} }
-      st.rounds = (st.rounds || 0) + 1
-      if(!Array.isArray(st.hits) || st.hits.length<21) st.hits = Array(21).fill(0)
-      st.hits[roll] = (st.hits[roll] || 0) + 1
-      st.banks = st.banks || {}
-      nextPlayers.forEach(p => { st.banks[p.id] = p.bank })
-      localStorage.setItem('roll_et_stats', JSON.stringify(st))
-    } catch {}
+    setStats(prev => {
+      const hits = [...prev.hits]
+      hits[roll] = (hits[roll] || 0) + 1
+      const banks = { ...prev.banks }
+      nextPlayers.forEach(p => { banks[p.id] = p.bank })
+      return { rounds: prev.rounds + 1, hits, banks }
+    })
 
     setPlayers(nextPlayers)
     setHistory(h => [{ roll, deltas, time: Date.now() }, ...h].slice(0, 30))
@@ -214,11 +168,11 @@ export default function App() {
       <header className="header">
         <div className="left" />
         <h1>Roll-et</h1>
-          <div className="right">
-            <div className="credits">
-              Round: <span className={`roundstate ${roundState}`}>{roundState.toUpperCase()}</span>
-            </div>
+        <div className="right">
+          <div className="credits">
+            Round: <span className={`roundstate ${roundState}`}>{roundState.toUpperCase()}</span>
           </div>
+        </div>
       </header>
 
       {isiOS && !installed && (
@@ -236,63 +190,32 @@ export default function App() {
         ))}
       </section>
 
-      <section className="controls">
-        <div className="amount">
-          <label>Bet: </label>
-          <input
-            type="number" min={MIN_BET} max={maxForActive} step={1}
-            value={amount}
-            onChange={(e)=> setAmount(clampInt(e.target.valueAsNumber || MIN_BET, MIN_BET, maxForActive))}
-            disabled={active.pool === 0}
-          />
-          <span className="hint">(min {MIN_BET}, remaining pool {active.pool})</span>
-          <span className="active-name">Active: {players.find(p=>p.id===activePid)?.name}</span>
-        </div>
+      <BetControls
+        amount={amount}
+        setAmount={setAmount}
+        minBet={MIN_BET}
+        maxForActive={maxForActive}
+        active={active}
+        mode={mode}
+        setMode={setMode}
+        roundState={roundState}
+        undoLast={undoLast}
+        clearBets={clearBets}
+        lockRound={lockRound}
+        enteredRoll={enteredRoll}
+        setEnteredRoll={setEnteredRoll}
+        settleRound={settleRound}
+        newRound={newRound}
+      />
 
-        <div className="betmodes">
-          {(['single','split','quarter','even','odd','high','low'] as BetType[]).map(k => (
-            <button
-              key={k}
-              className={(mode as any).kind === k ? 'active' : ''}
-              onClick={()=> setMode(k==='split' ? {kind:'split'} : {kind: k as any})}
-              disabled={roundState!=='open' || !canPlace(players.find(p=>p.id===activePid)!)}>
-              {labelFor(k as any)}
-            </button>
-          ))}
-        </div>
-
-        <div className="actions">
-          <button onClick={()=>undoLast(activePid)} disabled={roundState!=='open' || players.find(p=>p.id===activePid)!.bets.length===0}>Undo</button>
-          <button onClick={()=>clearBets(activePid)} disabled={roundState!=='open' || players.find(p=>p.id===activePid)!.bets.length===0}>Clear</button>
-          <button onClick={lockRound} disabled={roundState!=='open'}>Lock Bets</button>
-          <div className="manual-roll">
-            <input
-              type="number" min={1} max={20} placeholder="roll 1–20"
-              value={enteredRoll}
-              onChange={e=> setEnteredRoll((() => {
-                const v = e.target.valueAsNumber
-                if(!Number.isFinite(v)) return '' as const
-                const n = clampInt(v, 1, 20)
-                return n as unknown as number
-              })())}
-              disabled={roundState!=='locked'}
-            />
-            <button onClick={settleRound} disabled={roundState!=='locked' || !enteredRoll}>Settle</button>
-            <button onClick={newRound} disabled={roundState!=='settled'}>New Round</button>
-          </div>
-        </div>
-      </section>
-
-      <section className="table-wrap">
-        <BetGrid
-          grid={numberGrid}
-          mode={(mode as any).kind}
-          onCellClick={onCellClick}
-          splitFirst={(mode as any).kind==='split' ? (mode as any).first : undefined}
-          covered={covered}
-          winning={winning}
-        />
-      </section>
+      <BetBoard
+        grid={numberGrid}
+        mode={(mode as any).kind}
+        onCellClick={onCellClick}
+        splitFirst={(mode as any).kind==='split' ? (mode as any).first : undefined}
+        covered={covered}
+        winning={winning}
+      />
 
       <section className="bets">
         <h3>{players.find(p=>p.id===activePid)?.name} Bets (potential payout)</h3>
@@ -303,71 +226,18 @@ export default function App() {
                 <span>{describeBet(b)}</span>
                 <span> × {b.amount} → </span>
                 <span className="muted">{b.odds}:1</span>
-                <span> =&nbsp;<strong>{fmtUSD(b.amount * b.odds)}</strong></span>
+                <span> =&nbsp;<strong>{fmtUSD(potential(b))}</strong></span>
               </li>
             ))}
           </ul>
         )}
       </section>
 
-      <section className="history">
-        <h3>History</h3>
-        {history.length===0 ? <div className="muted">No rounds yet.</div> : (
-          <table>
-            <thead>
-              <tr>
-                <th>Roll</th>
-                {players.map(p=> <th key={p.id}>{p.name} Δ</th>)}
-                <th>Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              {history.map((h,i)=>(
-                <tr key={i}>
-                  <td>{h.roll}</td>
-                  {players.map(p => {
-                    const d = h.deltas[p.id] ?? 0
-                    const cls = d>=0 ? 'pos' : 'neg'
-                    return <td key={p.id} className={cls}>{fmtUSDSign(d)}</td>
-                  })}
-                  <td>{new Date(h.time).toLocaleTimeString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+      <HistorySection history={history} players={players} fmtUSDSign={fmtUSDSign} />
 
-      <footer className="footer-bar">
-        <div className="left">
-          {canInstall && <button className="install-btn" onClick={install}>Install</button>}
-          {installed && <span className="installed">Installed</span>}
-        </div>
-        <div className="center">© Kraken Consulting, LLC (Dev Team)</div>
-        <div className="right">
-          <Link className="link-btn" to="/stats">Stats</Link>
-        </div>
-      </footer>
+      <FooterBar canInstall={canInstall} install={install} installed={installed} />
     </div>
   )
-}
-
-function labelFor(t: BetType) {
-  switch(t){
-    case 'single': return 'Single (18:1)'
-    case 'split': return 'Split (8:1)'
-    case 'quarter': return 'Corners (3:1)'
-    case 'even': return 'Even (1:1)'
-    case 'odd': return 'Odd (1:1)'
-    case 'high': return 'High 11–20 (1:1)'
-    case 'low': return 'Low 1–10 (1:1)'
-  }
-}
-
-function clampInt(n: number, min: number, max: number): number {
-  if(!Number.isFinite(n)) return min
-  n = Math.floor(n)
-  return Math.min(max, Math.max(min, n))
 }
 
 function isAdjacent(a:number,b:number): boolean {
@@ -378,14 +248,4 @@ function isAdjacent(a:number,b:number): boolean {
   const A = pos(a), B = pos(b)
   const dr = Math.abs(A.r-B.r), dc = Math.abs(A.c-B.c)
   return (dr+dc===1)
-}
-
-function fmtUSD(credits: number): string {
-  const dollars = credits * CREDIT_VALUE
-  return dollars.toLocaleString(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2 })
-}
-function fmtUSDSign(credits: number): string {
-  const dollars = credits * CREDIT_VALUE
-  const str = Math.abs(dollars).toLocaleString(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2 })
-  return (dollars >= 0 ? '+' : '−') + str
 }
