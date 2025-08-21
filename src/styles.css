@@ -105,10 +105,32 @@ body{
 .betgrid .cell{
   padding: 12px 0; border-radius: 12px; border: 2px solid #334155; background: #0f172a; color: var(--text);
   text-align: center; font-variant-numeric: tabular-nums;
+  transition: background-color .3s, border-color .3s, box-shadow .3s;
 }
 .betgrid .cell.pending{ outline: 2px dashed var(--accent); }
-.betgrid .cell.covered{ border-color: var(--gold); box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.2) inset; }
-.betgrid .cell.winning{ background: var(--winbg); border-color: #10b981; }
+.betgrid .cell.covered{
+  border-color: var(--gold); box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.2) inset;
+  animation: betflash .4s ease-out;
+}
+.betgrid .cell.winning{
+  background: var(--winbg); border-color: #10b981;
+  animation: winpulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes betflash {
+  from { background: rgba(250, 204, 21, 0.2); }
+  to { background: #0f172a; }
+}
+
+@keyframes winpulse {
+  from { box-shadow: 0 0 0 0 rgba(16,185,129,0.7); }
+  to { box-shadow: 0 0 10px 4px rgba(16,185,129,0); }
+}
+
+@media (max-width: 480px){
+  .betgrid .row{ grid-template-columns: repeat(5, minmax(0,1fr)); gap:4px; }
+  .betgrid .cell{ padding:8px 0; font-size:14px; }
+}
 
 .bets, .history{ background: var(--panel); padding: 12px; border-radius: 12px; margin-bottom:12px; }
 .bets ul{ list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
