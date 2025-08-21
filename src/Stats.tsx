@@ -4,8 +4,16 @@ import { useInstallPrompt } from './pwa/useInstallPrompt'
 import { useStats } from './context/GameContext'
 
 export default function Stats() {
-  const { stats } = useStats()
+  const { stats, setStats } = useStats()
   const totalHits = stats.hits.slice(1).reduce((a, b) => a + b, 0)
+
+  const resetStats = () => {
+    const empty = { rounds: 0, hits: Array(21).fill(0), banks: {} as Record<number, number> }
+    setStats(empty)
+    try {
+      localStorage.setItem('roll_et_stats', JSON.stringify(empty))
+    } catch {}
+  }
 
   // ✅ hooks belong inside components
   const { canInstall, install, installed } = useInstallPrompt()
@@ -23,6 +31,7 @@ export default function Stats() {
           <div><strong>Rounds:</strong> {stats.rounds}</div>
           <div><strong>Total Rolls Logged:</strong> {totalHits}</div>
         </div>
+        <button className="link-btn" onClick={resetStats}>Reset Stats</button>
       </section>
 
       <section className="bets">
