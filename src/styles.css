@@ -131,4 +131,4 @@ body{
 }
 .footer-bar .left{ justify-self: start; display:flex; gap:8px; align-items:center; }
 .footer-bar .center{ justify-self: center; font-size: 12px; }
-.footer-bar .right{ justify-self: end; }
+.footer-bar .right{ justify-self: end; display:flex; gap:8px; }

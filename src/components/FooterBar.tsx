@@ -16,6 +16,8 @@ export function FooterBar({ canInstall, install, installed }: Props){
       </div>
       <div className="center">© Kraken Consulting, LLC (Dev Team)</div>
       <div className="right">
+        <Link className="link-btn" to="/player">Players</Link>
+        <Link className="link-btn" to="/house">House</Link>
         <Link className="link-btn" to="/stats">Stats</Link>
       </div>
     </footer>
