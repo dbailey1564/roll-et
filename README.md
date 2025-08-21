@@ -1,5 +1,7 @@
 # Roll‑et PWA (React + Vite)
 
+[![CI](https://github.com/dbailey1564/roll-et/actions/workflows/ci.yml/badge.svg)](https://github.com/dbailey1564/roll-et/actions/workflows/ci.yml)
+
 Summary:
 - React + Vite + TypeScript.
 - PWA via `vite-plugin-pwa` (autoUpdate).
