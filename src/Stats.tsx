@@ -1,29 +1,10 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { useInstallPrompt } from './pwa/useInstallPrompt'
-
-type StatsStore = {
-  rounds: number
-  hits: number[]
-  banks: Record<number, number>
-}
-
-function loadStats(): StatsStore {
-  try {
-    const raw = localStorage.getItem('roll_et_stats')
-    if (!raw) return { rounds: 0, hits: Array(21).fill(0), banks: {} }
-    const parsed = JSON.parse(raw)
-    const hits = Array.isArray(parsed.hits) && parsed.hits.length >= 21 ? parsed.hits : Array(21).fill(0)
-    const banks = typeof parsed.banks === 'object' && parsed.banks ? parsed.banks : {}
-    const rounds = Number(parsed.rounds) || 0
-    return { rounds, hits, banks }
-  } catch {
-    return { rounds: 0, hits: Array(21).fill(0), banks: {} }
-  }
-}
+import { useStats } from './context/GameContext'
 
 export default function Stats() {
-  const [stats] = React.useState<StatsStore>(loadStats())
+  const { stats } = useStats()
   const totalHits = stats.hits.slice(1).reduce((a, b) => a + b, 0)
 
   // ✅ hooks belong inside components

@@ -5,25 +5,17 @@ import { HistorySection } from './components/HistorySection'
 import { FooterBar } from './components/FooterBar'
 import { Bet, OddsTable, makeQuarterFromAnchor, resolveRound, numberGrid } from './game/engine'
 import { useInstallPrompt } from './pwa/useInstallPrompt'
-import type { BetMode, Player, RoundState } from './types'
+import type { BetMode, Player } from './types'
 import { clampInt, fmtUSD, fmtUSDSign } from './utils'
 import { useBetActions } from './hooks/useBetActions'
+import { usePlayers, useRoundState, useStats, PER_ROUND_POOL } from './context/GameContext'
 
 const MIN_BET = 1
-const PER_ROUND_POOL = 8
 
 export default function App() {
-  const playersInit: Player[] = React.useMemo(() => (
-    [1,2,3,4].map(i => ({
-      id: i,
-      name: `P${i}`,
-      bets: [],
-      pool: PER_ROUND_POOL,
-      bank: 0,
-    }))
-  ), [])
-
-  const [players, setPlayers] = React.useState<Player[]>(playersInit)
+  const { players, setPlayers } = usePlayers()
+  const { roundState, setRoundState } = useRoundState()
+  const { setStats } = useStats()
   const [activePid, setActivePid] = React.useState<number>(1)
 
   const DEFAULT_BET = 1
@@ -36,7 +28,6 @@ export default function App() {
 
   const [mode, setMode] = React.useState<BetMode>({ kind: 'single' })
 
-  const [roundState, setRoundState] = React.useState<RoundState>('open')
   const [enteredRoll, setEnteredRoll] = React.useState<number | ''>('')
   const [history, setHistory] = React.useState<Array<{ roll: number, deltas: Record<number, number>, time: number }>>([])
   const [winning, setWinning] = React.useState<number | null>(null)
@@ -137,16 +128,13 @@ export default function App() {
       return { ...p, bank: p.bank + delta }
     })
 
-    try {
-      const raw = localStorage.getItem('roll_et_stats')
-      const st = raw ? JSON.parse(raw) : { rounds:0, hits: Array(21).fill(0), banks: {} }
-      st.rounds = (st.rounds || 0) + 1
-      if(!Array.isArray(st.hits) || st.hits.length<21) st.hits = Array(21).fill(0)
-      st.hits[roll] = (st.hits[roll] || 0) + 1
-      st.banks = st.banks || {}
-      nextPlayers.forEach(p => { st.banks[p.id] = p.bank })
-      localStorage.setItem('roll_et_stats', JSON.stringify(st))
-    } catch {}
+    setStats(prev => {
+      const hits = [...prev.hits]
+      hits[roll] = (hits[roll] || 0) + 1
+      const banks = { ...prev.banks }
+      nextPlayers.forEach(p => { banks[p.id] = p.bank })
+      return { rounds: prev.rounds + 1, hits, banks }
+    })
 
     setPlayers(nextPlayers)
     setHistory(h => [{ roll, deltas, time: Date.now() }, ...h].slice(0, 30))
