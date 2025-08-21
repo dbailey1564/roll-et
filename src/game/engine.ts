@@ -49,7 +49,7 @@ export function resolveRound(roll: number, bets: Bet[]): number {
   return winnings
 }
 
-function wins(b: Bet, roll: number): boolean {
+export function wins(b: Bet, roll: number): boolean {
   switch(b.type){
     case 'single': return b.selection[0] === roll
     case 'split': return b.selection.includes(roll)
