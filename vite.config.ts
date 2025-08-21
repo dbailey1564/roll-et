@@ -12,8 +12,27 @@ export default defineConfig({
          cleanupOutdatedCaches: true,
          clientsClaim: true,
          skipWaiting: true,
+         navigateFallback: '/roll-et/offline.html',
+         runtimeCaching: [
+           {
+             urlPattern: ({ url }) => url.pathname.startsWith('/api'),
+             method: 'GET',
+             handler: 'NetworkFirst',
+             options: {
+               cacheName: 'api-cache',
+               networkTimeoutSeconds: 10,
+               expiration: {
+                 maxEntries: 50,
+                 maxAgeSeconds: 60 * 60,
+               },
+               cacheableResponse: {
+                 statuses: [0, 200],
+               },
+             },
+           },
+         ],
       },
-      includeAssets: ['icons/icon-192.png','icons/icon-512.png','icons/maskable-192.png','icons/maskable-512.png','favicon.svg'],
+      includeAssets: ['icons/icon-192.png','icons/icon-512.png','icons/maskable-192.png','icons/maskable-512.png','favicon.svg','offline.html'],
       manifest: {
         name: 'Roll‑et',
         short_name: 'Roll‑et',
