@@ -3,7 +3,7 @@ import { BetBoard } from './components/BetBoard'
 import { BetControls } from './components/BetControls'
 import { HistorySection } from './components/HistorySection'
 import { FooterBar } from './components/FooterBar'
-import { Bet, OddsTable, makeQuarterFromAnchor, resolveRound, numberGrid } from './game/engine'
+import { Bet, makeQuarterFromAnchor, resolveRound, numberGrid, getOdds } from './game/engine'
 import { useInstallPrompt } from './pwa/useInstallPrompt'
 import type { BetMode, Player } from './types'
 import { clampInt, fmtUSD, fmtUSDSign } from './utils'
@@ -78,7 +78,7 @@ export default function App() {
     if(!canPlace(p)) return
     switch(mode.kind){
       case 'single':
-        addBetFor(p.id, { type: 'single', selection: [n], amount, odds: OddsTable.single })
+        addBetFor(p.id, { type: 'single', selection: [n], amount })
         break
       case 'split': {
         const first = (mode as any).first as number | undefined
@@ -87,27 +87,27 @@ export default function App() {
         } else {
           if(!isAdjacent(first,n)){ setMode({ kind: 'split' }); return }
           const pair = [first, n].sort((a,b)=>a-b)
-          addBetFor(p.id, { type:'split', selection: pair, amount, odds: OddsTable.split })
+          addBetFor(p.id, { type:'split', selection: pair, amount })
           setMode({ kind: 'split' })
         }
         break
       }
       case 'quarter': {
         const q = makeQuarterFromAnchor(n)
-        if(q) addBetFor(p.id, { type:'quarter', selection: q, amount, odds: OddsTable.quarter })
+        if(q) addBetFor(p.id, { type:'quarter', selection: q, amount })
         break
       }
       case 'high':
-        addBetFor(p.id, { type:'high', selection: [], amount, odds: OddsTable.highLow })
+        addBetFor(p.id, { type:'high', selection: [], amount })
         break
       case 'low':
-        addBetFor(p.id, { type:'low', selection: [], amount, odds: OddsTable.highLow })
+        addBetFor(p.id, { type:'low', selection: [], amount })
         break
       case 'even':
-        addBetFor(p.id, { type:'even', selection: [], amount, odds: OddsTable.evenOdd })
+        addBetFor(p.id, { type:'even', selection: [], amount })
         break
       case 'odd':
-        addBetFor(p.id, { type:'odd', selection: [], amount, odds: OddsTable.evenOdd })
+        addBetFor(p.id, { type:'odd', selection: [], amount })
         break
     }
   }
@@ -161,7 +161,7 @@ export default function App() {
     }
   }
 
-  const potential = (b: Bet) => b.amount * b.odds
+  const potential = (b: Bet) => b.amount * getOdds(b.type)
 
   return (
     <div className="container">
@@ -225,7 +225,7 @@ export default function App() {
               <li key={b.id}>
                 <span>{describeBet(b)}</span>
                 <span> × {b.amount} → </span>
-                <span className="muted">{b.odds}:1</span>
+                <span className="muted">{getOdds(b.type)}:1</span>
                 <span> =&nbsp;<strong>{fmtUSD(potential(b))}</strong></span>
               </li>
             ))}

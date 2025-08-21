@@ -5,16 +5,19 @@ export interface Bet {
   type: BetType
   selection: number[]
   amount: number
-  odds: number
 }
 
 export const OddsTable = {
   single: 18,
   split: 8,
   quarter: 3,
-  highLow: 1,
-  evenOdd: 1,
+  high: 1,
+  low: 1,
+  even: 1,
+  odd: 1,
 } as const
+
+export const getOdds = (betType: BetType): number => OddsTable[betType]
 
 export const numberGrid: number[][] = [
   [1,2,3,4,5],
@@ -40,7 +43,7 @@ export function resolveRound(roll: number, bets: Bet[]): number {
   let winnings = 0
   for(const b of bets){
     if(wins(b, roll)){
-      winnings += b.amount * b.odds
+      winnings += b.amount * getOdds(b.type)
     }
   }
   return winnings
