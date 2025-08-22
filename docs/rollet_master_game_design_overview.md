@@ -18,7 +18,7 @@ This document consolidates all game rules, player flow, and contract definitions
 - **Betting Options:**
   - **Single** (exact number) → 18:1 payout.
   - **Split** (two adjacent numbers) → 8:1 payout.
-  - **Quarter** (2×2 block) → 3:1 payout.
+  - **Corner** (2×2 block) → 3:1 payout.
   - **Even** → 1:1 payout.
   - **Odd** → 1:1 payout.
   - **High** (11–20) → 1:1 payout.

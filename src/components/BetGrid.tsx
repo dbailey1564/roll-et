@@ -64,8 +64,8 @@ export function BetGrid({ grid, mode, splitFirst, onCellClick, covered, winning 
                   onClick={() => onCellClick(n)}
                   onKeyDown={e => handleKey(e, rIdx, cIdx)}
                   title={
-                    mode === 'quarter'
-                      ? 'Corners anchor (top-left of a 2x2)'
+                    mode === 'corner'
+                      ? 'Corner anchor (top-left of a 2×2)'
                       : mode === 'split'
                       ? splitFirst
                         ? `Choose an adjacent cell to ${splitFirst}`

@@ -3,7 +3,7 @@ import type { Bet } from './game/engine'
 export type BetMode =
   | { kind: 'single' }
   | { kind: 'split'; first?: number }
-  | { kind: 'quarter' }
+  | { kind: 'corner' }
   | { kind: 'high' }
   | { kind: 'low' }
   | { kind: 'even' }

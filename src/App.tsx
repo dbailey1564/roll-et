@@ -3,7 +3,7 @@ import { BetBoard } from './components/BetBoard'
 import { BetControls } from './components/BetControls'
 import { HistorySection } from './components/HistorySection'
 import { FooterBar } from './components/FooterBar'
-import { Bet, makeQuarterFromAnchor, resolveRound, numberGrid, getOdds } from './game/engine'
+import { Bet, makeCornerFromAnchor, resolveRound, numberGrid, getOdds } from './game/engine'
 import { useInstallPrompt } from './pwa/useInstallPrompt'
 import type { BetMode, Player } from './types'
 import { clampInt, fmtUSD, fmtUSDSign } from './utils'
@@ -48,7 +48,7 @@ export default function App() {
     for(const p of players){
       for(const b of p.bets){
         switch(b.type){
-          case 'single': case 'split': case 'quarter':
+          case 'single': case 'split': case 'corner':
             b.selection.forEach(n => s.add(n)); break
           case 'even':
             for(let n=2;n<=20;n+=2) s.add(n); break
@@ -92,9 +92,9 @@ export default function App() {
         }
         break
       }
-      case 'quarter': {
-        const q = makeQuarterFromAnchor(n)
-        if(q) addBetFor(p.id, { type:'quarter', selection: q, amount })
+      case 'corner': {
+        const q = makeCornerFromAnchor(n)
+        if(q) addBetFor(p.id, { type:'corner', selection: q, amount })
         break
       }
       case 'high':
@@ -153,7 +153,7 @@ export default function App() {
     switch(b.type){
       case 'single': return `#${b.selection[0]}`
       case 'split': return `Split ${b.selection.join(' / ')}`
-      case 'quarter': return `Corners ${b.selection.join('-')}`
+      case 'corner': return `Corner ${b.selection.join('-')}`
       case 'even': return 'Even'
       case 'odd': return 'Odd'
       case 'high': return 'High 11–20'
