@@ -33,19 +33,6 @@ export default function App() {
 
   const { canInstall, install, installed, isiOS } = useInstallPrompt()
 
-  const [seat, setSeat] = React.useState<number | null>(null)
-  const [hosting, setHosting] = React.useState(false)
-
-  const joinGame = () => {
-    setSeat(1)
-    setRoundState('locked')
-  }
-
-  const hostGame = () => {
-    setHosting(true)
-    setRoundState('locked')
-  }
-
   const active = players[0]
   const totalStake = (p: Player) => p.bets.reduce((a,b)=>a+b.amount, 0)
   const maxForActive = Math.max(MIN_BET, active.pool)
@@ -179,23 +166,13 @@ export default function App() {
     <div className="container">
       <header className="header">
         <div className="left">
-          {seat != null ? (
-            <span className="seat">Seat: {seat}</span>
-          ) : hosting ? (
-            <span className="seat">Seat: Open</span>
-          ) : (
-            <button className="link-btn" onClick={joinGame}>Join</button>
-          )}
+          <span className="seat">Seat: Open</span>
         </div>
         <h1>Roll-et</h1>
         <div className="right">
-          {hosting || seat != null ? (
-            <div className="credits">
-              Round: <span className={`roundstate ${roundState}`}>{roundState.toUpperCase()}</span>
-            </div>
-          ) : (
-            <button className="link-btn" onClick={hostGame}>Host</button>
-          )}
+          <div className="credits">
+            Round: <span className={`roundstate ${roundState}`}>{roundState.toUpperCase()}</span>
+          </div>
         </div>
       </header>
 
