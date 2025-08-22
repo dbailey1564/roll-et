@@ -32,7 +32,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   ), [])
 
   const [players, setPlayers] = React.useState<Player[]>(playersInit)
-  const [roundState, setRoundState] = React.useState<RoundState>('open')
+  const [roundState, setRoundState] = React.useState<RoundState>('locked')
   const [stats, setStats] = React.useState<Stats>(() => {
     try {
       const raw = localStorage.getItem('roll_et_stats')

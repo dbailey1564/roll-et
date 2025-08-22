@@ -27,7 +27,6 @@ export function BetControls({ amount, setAmount, minBet, maxForActive, active, m
   return (
     <section className="controls">
       <div className="amount">
-        <label>Bet: </label>
         <input
           type="number" min={minBet} max={maxForActive} step={1}
           value={amount}
@@ -35,7 +34,6 @@ export function BetControls({ amount, setAmount, minBet, maxForActive, active, m
           disabled={active.pool === 0}
         />
         <span className="hint">(min {minBet}, remaining pool {active.pool})</span>
-        <span className="active-name">Active: {active.name}</span>
       </div>
 
       <div className="betmodes">
