@@ -16,9 +16,13 @@ This document consolidates all game rules, player flow, and contract definitions
   5. **Settled** — Credits liquidated to winnings/losses → tender or BANK.
 
 - **Betting Options:**
-  - Single numbers → 18:1 payout.
-  - Splits → 8:1 payout.
-  - Quarters included.
+  - **Single** (exact number) → 18:1 payout.
+  - **Split** (two adjacent numbers) → 8:1 payout.
+  - **Quarter** (2×2 block) → 3:1 payout.
+  - **Even** → 1:1 payout.
+  - **Odd** → 1:1 payout.
+  - **High** (11–20) → 1:1 payout.
+  - **Low** (1–10) → 1:1 payout.
   - No thirds, Lucky 7, or prime/composite bets.
 
 ---
