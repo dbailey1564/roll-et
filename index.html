@@ -7,6 +7,11 @@
     <meta name="theme-color" content="#0ea5e9" />
     <link rel="manifest" href="/roll-et/manifest.webmanifest">
     <script>
+      if (window.location.pathname.endsWith('/index.html')) {
+        window.location.replace('/roll-et/');
+      }
+    </script>
+    <script>
       // SPA deep-link restore when 404.html bounced us here
       (function(){
         try {
