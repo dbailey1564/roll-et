@@ -1,18 +1,18 @@
 import { describe, it, expect } from 'vitest'
-import { makeQuarterFromAnchor, resolveRound, wins, type Bet } from '../game/engine'
+import { makeCornerFromAnchor, resolveRound, wins, type Bet } from '../game/engine'
 
-describe('makeQuarterFromAnchor', () => {
-  it('returns correct quarter for valid anchor', () => {
-    expect(makeQuarterFromAnchor(1)).toEqual([1, 2, 6, 7])
+describe('makeCornerFromAnchor', () => {
+  it('returns correct corner for valid anchor', () => {
+    expect(makeCornerFromAnchor(1)).toEqual([1, 2, 6, 7])
   })
 
   it('returns null for anchor on the right edge', () => {
-    expect(makeQuarterFromAnchor(5)).toBeNull()
+    expect(makeCornerFromAnchor(5)).toBeNull()
   })
 
   it('returns null for anchors outside the grid', () => {
-    expect(makeQuarterFromAnchor(0)).toBeNull()
-    expect(makeQuarterFromAnchor(21)).toBeNull()
+    expect(makeCornerFromAnchor(0)).toBeNull()
+    expect(makeCornerFromAnchor(21)).toBeNull()
   })
 })
 
@@ -31,8 +31,8 @@ describe('wins', () => {
     expect(wins(bet('split', [5, 6]), 6)).toBe(true)
     expect(wins(bet('split', [5, 6]), 7)).toBe(false)
 
-    expect(wins(bet('quarter', [1, 2, 6, 7]), 7)).toBe(true)
-    expect(wins(bet('quarter', [1, 2, 6, 7]), 8)).toBe(false)
+    expect(wins(bet('corner', [1, 2, 6, 7]), 7)).toBe(true)
+    expect(wins(bet('corner', [1, 2, 6, 7]), 8)).toBe(false)
   })
 
   it('evaluates parity and range bets', () => {
@@ -55,7 +55,7 @@ describe('resolveRound', () => {
     const bets: Bet[] = [
       { id: 'b1', type: 'single', selection: [7], amount: 10 },
       { id: 'b2', type: 'even', selection: [], amount: 5 },
-      { id: 'b3', type: 'quarter', selection: [6, 7, 11, 12], amount: 10 },
+      { id: 'b3', type: 'corner', selection: [6, 7, 11, 12], amount: 10 },
     ]
     expect(resolveRound(7, bets)).toBe(10 * 18 + 10 * 3)
   })

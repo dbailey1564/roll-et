@@ -12,8 +12,8 @@ function describeBet(b: Bet): string {
       return `#${b.selection[0]}`
     case 'split':
       return `Split ${b.selection.join(' / ')}`
-    case 'quarter':
-      return `Corners ${b.selection.join('-')}`
+    case 'corner':
+      return `Corner ${b.selection.join('-')}`
     case 'even':
       return 'Even'
     case 'odd':

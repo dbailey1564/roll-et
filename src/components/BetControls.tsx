@@ -39,7 +39,7 @@ export function BetControls({ amount, setAmount, minBet, maxForActive, active, m
       </div>
 
       <div className="betmodes">
-        {(['single','split','quarter','even','odd','high','low'] as BetType[]).map(k => (
+        {(['single','split','corner','even','odd','high','low'] as BetType[]).map(k => (
           <button
             key={k}
             className={(mode as any).kind === k ? 'active' : ''}
@@ -78,7 +78,7 @@ function labelFor(t: BetType) {
   switch(t){
     case 'single': return 'Single (18:1)'
     case 'split': return 'Split (8:1)'
-    case 'quarter': return 'Corners (3:1)'
+    case 'corner': return 'Corner (3:1)'
     case 'even': return 'Even (1:1)'
     case 'odd': return 'Odd (1:1)'
     case 'high': return 'High 11–20 (1:1)'
