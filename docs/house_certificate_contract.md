@@ -1,7 +1,7 @@
 # Roll‑et — House Certificate (License) — Conceptual Contract
 
 ## Purpose
-Authorize a device/operator to run **House** features for Roll‑et. Enables hosting rounds, admitting seats, issuing Bet Certs and BANK receipts, and syncing ledgers. Must be **verifiable offline** by Players.
+Authorize a device/operator to run **House** features for Roll‑et. Enables hosting rounds, admitting seats, issuing [Bet Certificates](./bet_certificate_contract.md) and [BANK Receipts](./bank_receipt_contract.md), and syncing [ledgers](./ledger_sync_contract.md). Must be **verifiable offline** by Players.
 
 ## Trust Chain & Roles
 - **Root Authority:** Platform root key baked into the PWA; anchor of trust.
@@ -24,9 +24,9 @@ Authorize a device/operator to run **House** features for Roll‑et. Enables hos
 ## Required Claims / Assertions (Conceptual)
 - **Issuer:** Root Authority identity.
 - **Subject:** House identity (operator or device namespace).
-- **Public Key:** House’s verification key (for signatures on Bet Certs, receipts, etc.).
+- **Public Key:** House’s verification key (for signatures on [Bet Certificates](./bet_certificate_contract.md), [BANK Receipts](./bank_receipt_contract.md), etc.).
 - **Validity Window:** Not‑before / Not‑after timestamps.
-- **Capabilities:** Minimum set includes: host rounds, issue join challenges, mint Bet Certs, issue BANK receipts, sync ledgers.
+- **Capabilities:** Minimum set includes: host rounds, issue [Join Challenge/Response](./join_challenge_response_contract.md), mint [Bet Certificates](./bet_certificate_contract.md), issue [BANK Receipts](./bank_receipt_contract.md), sync [ledgers](./ledger_sync_contract.md).
 - **License SKU / Plan:** Identifies 28‑day vs. other tiers when added.
 - **Key Identifier / Rotation Hook:** Linkage for future key roll without breaking trust.
 - **Anti‑replay ID:** Unique certificate identifier.
@@ -39,22 +39,22 @@ Authorize a device/operator to run **House** features for Roll‑et. Enables hos
 ## Renewal / Rotation
 - **Renewal:** New Cert supersedes the old; old may enter a brief **grace (read‑only)** state for verification of past artifacts, but cannot host.
 - **Key rotation:** Allowed at renewal; Cert carries a rotation hook so Players can still verify chains for artifacts issued under prior keys.
-- **Continuity:** Previously issued Bet Certs and BANK receipts remain verifiable via their original chain.
+- **Continuity:** Previously issued [Bet Certificates](./bet_certificate_contract.md) and [BANK Receipts](./bank_receipt_contract.md) remain verifiable via their original chain.
 
 ## Revocation
 - **Triggers:** Fraud, payment reversal, policy breach.
 - **Effects:** Hosting immediately blocked; Players still verify artifacts cryptographically, but **spend/redeem** requires a **currently valid** House Cert.
-- **Propagation:** Reflected at next Player interaction (offline signage via expiry mismatch) and at next ledger sync (online).
+- **Propagation:** Reflected at next Player interaction (offline signage via expiry mismatch) and at next [ledger sync](./ledger_sync_contract.md) (online).
 
 ## Verification (by Players — Offline)
-- **Inputs:** House presents Cert during Join (bundled in Join QR).
+- **Inputs:** House presents Cert during [Join Challenge/Response](./join_challenge_response_contract.md) (bundled in Join QR).
 - **Checks:**  
   - Chain validity (Root → Cert signature).  
   - Validity window (current time within not‑before/after).  
   - Capability claim includes “host rounds.”  
   - Optional device binding policy satisfied (if you support multi‑device).
 - **Outcome:**  
-  - **Pass:** Player proceeds with join challenge/response.  
+  - **Pass:** Player proceeds with [Join Challenge/Response](./join_challenge_response_contract.md).
   - **Fail:** Player sees “license invalid/expired” UX and a purchase/renewal link (for prospective House operators).
 
 ## Hosting Gating (by House App)
@@ -62,18 +62,18 @@ Authorize a device/operator to run **House** features for Roll‑et. Enables hos
   - Cert active.  
   - Device holds matching private key.  
 - **Gated operations:**  
-  - Start round (and set valuation).  
-  - Admit seats (verify join responses).  
-  - Lock and mint **Bet Certs**.  
-  - Issue **BANK receipts**.  
-  - **Sync** local ledger to authority backend.
+  - Start round (and set valuation).
+  - Admit seats (verify [Join Challenge/Response](./join_challenge_response_contract.md) responses).
+  - Lock and mint [Bet Certificates](./bet_certificate_contract.md).
+  - Issue [BANK Receipts](./bank_receipt_contract.md).
+  - [Sync](./ledger_sync_contract.md) local ledger to authority backend.
 
 ## Artifacts Issued Under a Cert
-- **Bet Certs:** Must be signed by the House key referenced in the active Cert; include round binding; verifiable offline. Short validity for reopen/view.
-- **BANK receipts:** Signed settlement records; unique and spend/not‑spent tracked by House ledger; verifiable offline; redemption requires an **active** Cert at time of spend.
-- **Join challenges:** Contain the Cert and rotating challenge; Players verify before responding.
+- [Bet Certificates](./bet_certificate_contract.md): Must be signed by the House key referenced in the active Cert; include round binding; verifiable offline. Short validity for reopen/view.
+- [BANK Receipts](./bank_receipt_contract.md): Signed settlement records; unique and spend/not‑spent tracked by House ledger; verifiable offline; redemption requires an **active** Cert at time of spend.
+- [Join Challenge/Response](./join_challenge_response_contract.md): Contain the Cert and rotating challenge; Players verify before responding.
 
-## Ledger & Sync Rules (Cert Interaction)
+## [Ledger & Sync](./ledger_sync_contract.md) Rules (Cert Interaction)
 - **Eligibility:** Sync accepted only if the submitting House presents a **currently active** Cert.
 - **Scope:** House uploads an append‑only ledger of rounds, admissions, bets, outcomes, settlements, and receipt states.
 - **Normalization:** Backend enforces the **$1,440 max per player per round** ceiling in aggregated analytics.

@@ -4,22 +4,22 @@
 Maintain a complete, tamper-evident record of all House operations (rounds, admissions, bets, certs, receipts, outcomes). Ensure periodic synchronization of these records with the Roll-et authority backend, while enforcing global normalization rules and license validity.
 
 ## Trust Chain & Roles
-- **Root Authority:** Anchor baked into PWA; issues House Certificates; operates backend sync endpoint.  
-- **House Certificate:** Active license required for ledger sync.  
+- **Root Authority:** Anchor baked into PWA; issues [House Certificates](./house_certificate_contract.md); operates backend sync endpoint.
+- [House Certificate](./house_certificate_contract.md): Active license required for ledger sync.
 - **House Device:** Maintains local append-only ledger; uploads batches during sync.  
 - **Player Devices:** Reference local ledger entries (admissions, certs, receipts) but do not maintain global sync.  
 
 ## Ledger Scope
 Each ledger entry MUST capture the authoritative state of Player interaction with a round. Minimum fields (conceptual):  
-- House identity (via House Cert).  
-- Round ID + valuation.  
-- Admission events (Player UID, seat assignment, buy-in credits).  
-- Bets (normalized slips, wagered credits, counters).  
-- Lock events (bet hashes, Bet Cert issuance).  
-- Results (winning number, odds applied).  
-- Settlements (net value, disposition = tender/banked).  
-- BANK receipts (issued, spent, IDs).  
-- Errors/rejections (optional, for audit).  
+  - House identity (via [House Certificate](./house_certificate_contract.md)).
+  - Round ID + valuation.
+  - Admission events (Player UID, seat assignment, buy-in credits) via [Join Challenge/Response](./join_challenge_response_contract.md).
+  - Bets (normalized slips, wagered credits, counters).
+  - Lock events (bet hashes, [Bet Certificate](./bet_certificate_contract.md) issuance).
+  - Results (winning number, odds applied).
+  - Settlements (net value, disposition = tender/banked).
+  - [BANK Receipts](./bank_receipt_contract.md) (issued, spent, IDs).
+  - Errors/rejections (optional, for audit).
 
 ## Local Ledger Properties
 - **Append-only:** No deletions or retroactive edits allowed.  
@@ -29,7 +29,7 @@ Each ledger entry MUST capture the authoritative state of Player interaction wit
 
 ## Sync Process
 - **Trigger:** Periodic or on-demand (House operator action).  
-- **Prerequisite:** Active House Certificate required.  
+- **Prerequisite:** Active [House Certificate](./house_certificate_contract.md) required.
 - **Batching:** House transmits append-only segment since last sync.  
 - **Verification by backend:**  
   - Cert validity (Root → House).  
