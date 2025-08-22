@@ -1,7 +1,7 @@
 # Roll-et — Join Challenge/Response Contract
 
 ## Purpose
-Provide a secure, offline-verifiable admission mechanism for Players to join a House-hosted round. Ensures that only valid Houses (with active certificates) can admit Players, and that Player admissions are non-forgeable, non-replayable, and bound to a specific round.
+Provide a secure, offline-verifiable admission mechanism for Players to join a House-hosted round. Ensures that only valid Houses (with active certificates) can admit Players, and that Player admissions are non-forgeable, non-replayable, and bound to a specific round. Successful admission leads to issuance of a [Bet Certificate](./bet_certificate_contract.md); winnings may later be stored as a [BANK receipt](./bank_receipt_contract.md).
 
 ## Trust Chain & Roles
 - **Root Authority:** Anchor baked into PWA; signs House Certificates.  
@@ -11,10 +11,39 @@ Provide a secure, offline-verifiable admission mechanism for Players to join a H
 
 ## Lifecycle & States
 1. **Challenge Issued:** House generates ephemeral challenge (nonce + time anchor + round binding).  
-2. **QR Display:** Challenge packaged with House Certificate and Round binding into Join QR.  
-3. **Response Computed:** Player scans QR, validates Certificate, and computes signed response bound to challenge.  
-4. **Verification:** House checks response validity and admits Player if seat available.  
+2. **QR Display:** Challenge packaged with House Certificate and Round binding into Join QR.
+3. **Response Computed:** Player scans QR, validates Certificate, and computes signed response bound to challenge.
+4. **Verification:** House checks response validity and admits Player if seat available.
 5. **Ledger Entry:** Admission recorded with seat assignment and buy-in.
+
+## QR Payload Format
+- **Challenge QR:** Encodes a JSON object:
+
+```json
+{
+  "type": "join-challenge",
+  "houseCert": "<base64 cert>",
+  "round": "<round id>",
+  "nonce": "<random>",
+  "nbf": "<epoch ms>",
+  "exp": "<epoch ms>"
+}
+```
+
+- **Player Response:** Returned payload (not necessarily QR) includes:
+
+```json
+{
+  "player": "<uid>",
+  "round": "<round id>",
+  "nonce": "<challenge nonce>",
+  "hmac": "<rolling code>",
+  "bankRef": "<optional receiptId>",
+  "sig": "<player signature>"
+}
+```
+
+`bankRef` allows a Player to fund the buy-in with a stored [BANK receipt](./bank_receipt_contract.md). When admission succeeds, this `bankRef` is logged and later embedded in the resulting [Bet Certificate](./bet_certificate_contract.md).
 
 ## Challenge Requirements
 - **Contents:**  
@@ -32,25 +61,31 @@ Provide a secure, offline-verifiable admission mechanism for Players to join a H
   - Confirm Certificate validity window.  
 - **Response Computation:**  
   - Use pre-established pairwise secret (from Player ↔ House) to compute rolling code/HMAC.  
-  - Bind response to challenge nonce, round identifier, and seat request.  
-  - Include Player device signature for integrity.  
+  - Bind response to challenge nonce, round identifier, and seat request.
+  - Include Player device signature for integrity and optionally a `bankRef` if paying via BANK receipt.
 
 ## House Verification
 - **Checks performed:**  
   - Certificate chain valid.  
   - Certificate not expired/revoked.  
-  - Challenge nonce is fresh and unused.  
-  - Response matches expected rolling code within drift tolerance.  
-  - Player signature validates against Player UID key.  
-  - Round seat count < 4.  
+  - Challenge nonce is fresh and unused.
+  - Response matches expected rolling code within drift tolerance.
+  - Player signature validates against Player UID key.
+  - If `bankRef` present, associated BANK receipt is valid and unspent.
+  - Round seat count < 4.
 - **Outcomes:**  
   - **Pass:** Player admitted; ledger entry created; Player allocated 4 credits at declared round valuation.  
   - **Fail:** Player denied; UX shows error (expired cert, full seats, stale QR, etc.).
 
 ## Seat Policy
-- **Maximum seats:** 4 Players per round (default).  
-- **Duplicate admission:** Re-join attempt by the same Player in the same round is rejected.  
-- **Audit:** All failed or rejected attempts logged in the House ledger for sync.  
+- **Maximum seats:** 4 Players per round (default).
+- **Duplicate admission:** Re-join attempt by the same Player in the same round is rejected.
+- **Audit:** All failed or rejected attempts logged in the House ledger for sync.
+
+## Expiry & Renewal
+- **Challenge expiry:** The `exp` value in the challenge QR (≈10–15 s from issuance) defines when it becomes invalid.
+- **Renewal:** Expired challenges cannot be renewed; Players must scan a fresh QR.
+- **Certificate expiry:** House Certificates may also expire; Players must wait for the House to renew before joining.
 
 ## Ledger & Sync
 - **Admission record:** Round ID, Player UID, challenge nonce, admission timestamp, buy-in credits, seat index.  

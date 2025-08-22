@@ -1,7 +1,7 @@
 # Roll-et — BANK Receipt Contract
 
 ## Purpose
-Provide Players with secure, offline-verifiable receipts representing end-of-round settlements (winnings or losses). Enables value to be stored for future rounds (“re-buy”) or withdrawn later, while ensuring receipts cannot be forged or replayed.
+Provide Players with secure, offline-verifiable receipts representing end-of-round settlements (winnings or losses). Enables value to be stored for future rounds (“re-buy”) or withdrawn later, while ensuring receipts cannot be forged or replayed. When a receipt funds a new seat via the [Join Challenge/Response Contract](./join_challenge_response_contract.md), its ID is carried forward as a `bankRef` inside the resulting [Bet Certificate](./bet_certificate_contract.md).
 
 ## Trust Chain & Roles
 - **Root Authority:** Anchor baked into PWA; signs House Certificates.  
@@ -19,22 +19,43 @@ Provide Players with secure, offline-verifiable receipts representing end-of-rou
 
 ## Required Claims / Assertions (Conceptual)
 - **Issuer:** House identity (via House Certificate).  
-- **Receipt ID:** Globally unique identifier for replay protection.  
-- **Player Binding:** Player UID associated with receipt.  
-- **Round Binding:** Round ID from which settlement originated.  
-- **Settlement Value:** Currency amount (credits × valuation).  
-- **Disposition:** Marked as “banked.”  
-- **Timestamp:** Issuance time.  
-- **Validity:** Optional expiry/policy window.  
+- **Receipt ID:** Globally unique identifier for replay protection.
+- **Player Binding:** Player UID associated with receipt.
+- **Round Binding:** Round ID from which settlement originated.
+- **Settlement Value:** Currency amount (credits × valuation).
+- **Disposition:** Marked as “banked.”
+- **Timestamp:** Issuance time.
+- **Validity:** Optional expiry/policy window; may require renewal to remain spendable.
+- **Bet Cert Reference:** `receiptId` serves as the `bankRef` recorded in Bet Certs and join responses.
 
 ## Issuance (Input/Output)
-- **Inputs:** Player UID, Round ID, net settlement amount.  
-- **Process:** House constructs receipt payload; signs with House private key.  
-- **Outputs:** Player receives compact receipt (local storage, optional QR for portability).  
+- **Inputs:** Player UID, Round ID, net settlement amount.
+- **Process:** House constructs receipt payload; signs with House private key.
+- **Outputs:** Player receives compact receipt (local storage, optional QR for portability).
+
+## QR Payload Format
+Receipts can be exported or transferred as a JSON payload encoded into a QR:
+
+```json
+{
+  "type": "bank-receipt",
+  "receiptId": "<uuid>",
+  "player": "<player uid>",
+  "round": "<round id>",
+  "value": "<currency>",
+  "nbf": "<epoch ms>",
+  "exp": "<optional epoch ms>",
+  "spent": false,
+  "betCertRef": "<bet cert id>"
+}
+```
+
+`betCertRef` links the receipt back to the Bet Cert that produced the settlement. The `exp` field (if present) governs when the receipt must be renewed.
 
 ## Usage Paths
-- **Re-buy into round:** Player presents receipt; House verifies validity and converts value into the 4-credit round entry at the declared valuation (up to 8 credits cap). Any leftover remains stored.  
-- **Withdraw (tender):** Player presents receipt; House verifies and pays out; marks receipt “spent.”  
+- **Re-buy into round:** Player presents receipt; House verifies validity and converts value into the 4-credit round entry at the declared valuation (up to 8 credits cap). Any leftover remains stored.
+- **Withdraw (tender):** Player presents receipt; House verifies and pays out; marks receipt “spent.”
+Both usage paths mark the `receiptId` as spent and, when re-buying, propagate it as `bankRef` for the new round’s Bet Cert.
 
 ## Verification (Offline by House or Player)
 - **Inputs:** Receipt + House Certificate.  
@@ -55,8 +76,13 @@ Provide Players with secure, offline-verifiable receipts representing end-of-rou
 ## Ledger & Sync
 - **At issuance:** Receipt issuance logged with value, Player UID, round ID, and receipt ID.  
 - **At usage:** Ledger updated to mark receipt as spent (with usage type: re-buy or payout).  
-- **At sync:** Both issuance and spent states uploaded.  
-- **Normalization:** Global analytics cap still enforced at $1,440/player/round ceiling.  
+- **At sync:** Both issuance and spent states uploaded.
+- **Normalization:** Global analytics cap still enforced at $1,440/player/round ceiling.
+
+## Expiry & Renewal
+- **Expiry:** If an `exp` is present and has passed, the receipt cannot be spent until renewed.
+- **Renewal:** Player presents the expired receipt to the House; after ledger verification, the House issues a new receipt with refreshed `exp` and references the prior `receiptId` in `betCertRef`.
+- **Spent receipts:** Once marked spent, receipts are ineligible for renewal.
 
 ## Error Semantics
 - **Expired/Invalid House Cert:** Receipt verifiable cryptographically but not spendable until House renews.  
