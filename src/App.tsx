@@ -16,7 +16,6 @@ export default function App() {
   const { players, setPlayers } = usePlayers()
   const { roundState, setRoundState } = useRoundState()
   const { setStats } = useStats()
-  const [activePid, setActivePid] = React.useState<number>(1)
 
   const DEFAULT_BET = 1
   const [amount, setAmount] = React.useState<number>(() => {
@@ -34,14 +33,14 @@ export default function App() {
 
   const { canInstall, install, installed, isiOS } = useInstallPrompt()
 
-  const active = players.find(p => p.id === activePid)!
+  const active = players[0]
   const totalStake = (p: Player) => p.bets.reduce((a,b)=>a+b.amount, 0)
   const maxForActive = Math.max(MIN_BET, active.pool)
   const canPlace = (p: Player) => roundState==='open' && amount>=MIN_BET && amount<=p.pool
 
   React.useEffect(() => {
     setAmount(a => clampInt(a, MIN_BET, maxForActive))
-  }, [activePid, active.pool])
+  }, [active.pool])
 
   const covered = React.useMemo(() => {
     const s = new Set<number>()
@@ -179,17 +178,6 @@ export default function App() {
         <div className="ios-hint">On iPhone/iPad: Share → Add to Home Screen to install.</div>
       )}
 
-      <section className="players">
-        {players.map(p => (
-          <button key={p.id} className={'player ' + (p.id===activePid?'active':'')} onClick={()=>setActivePid(p.id)}>
-            <div className="name">{p.name}</div>
-            <div className="line"><span>Pool</span><strong>{p.pool}/{PER_ROUND_POOL}</strong></div>
-            <div className="line"><span>Bank</span><strong className={p.bank>=0?'pos':'neg'}>{fmtUSDSign(p.bank)}</strong></div>
-            <div className="line"><span>Stake</span><strong>{fmtUSD(totalStake(p))}</strong></div>
-          </button>
-        ))}
-      </section>
-
       <BetControls
         amount={amount}
         setAmount={setAmount}
@@ -218,10 +206,10 @@ export default function App() {
       />
 
       <section className="bets">
-        <h3>{players.find(p=>p.id===activePid)?.name} Bets (potential payout)</h3>
-        {players.find(p=>p.id===activePid)!.bets.length===0 ? <div className="muted">No bets placed.</div> : (
+        <h3>Bets (potential payout)</h3>
+        {active.bets.length===0 ? <div className="muted">No bets placed.</div> : (
           <ul>
-            {players.find(p=>p.id===activePid)!.bets.map(b => (
+            {active.bets.map(b => (
               <li key={b.id}>
                 <span>{describeBet(b)}</span>
                 <span> × {b.amount} → </span>
