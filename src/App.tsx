@@ -165,7 +165,9 @@ export default function App() {
   return (
     <div className="container">
       <header className="header">
-        <div className="left" />
+        <div className="left">
+          <span className="seat">Seat: Open</span>
+        </div>
         <h1>Roll-et</h1>
         <div className="right">
           <div className="credits">

@@ -68,7 +68,8 @@ body{
 .amount{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .amount input{ width: 96px; padding: 6px 8px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: var(--text); }
 .hint{ color: var(--muted); font-size: 12px; }
-.active-name{ color: #86efac; }
+
+.seat{ font-weight: 600; }
 
 .actions{ display:flex; gap:8px; align-items:center; flex-wrap: wrap; }
 .actions button{ padding: 8px 10px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: var(--text); }
