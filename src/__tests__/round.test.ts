@@ -1,0 +1,19 @@
+import { describe, it, expect } from 'vitest'
+import { lockRound } from '../round'
+import type { Player } from '../types'
+
+function subtle() { return globalThis.crypto.subtle }
+async function genKeyPair() { return subtle().generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign','verify']) }
+
+describe('round locking', () => {
+  it('generates bet certs for players', async () => {
+    const house = await genKeyPair()
+    const players: Player[] = [
+      { id: 1, name: 'P1', bets: [{ id: 'b1', type: 'single', selection: [1], amount: 1 }], pool: 0, bank: 0 },
+      { id: 2, name: 'P2', bets: [], pool: 0, bank: 0 }
+    ]
+    const certs = await lockRound(players, house.privateKey, 'r1')
+    expect(certs).toHaveLength(2)
+    expect(certs[0].player).toBe('1')
+  })
+})
