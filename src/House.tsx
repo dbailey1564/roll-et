@@ -3,16 +3,55 @@ import { Link } from 'react-router-dom'
 import { usePlayers, useRoundState, useStats, PER_ROUND_POOL } from './context/GameContext'
 import { fmtUSDSign } from './utils'
 import { useInstallPrompt } from './pwa/useInstallPrompt'
+import { lockRound } from './round'
+import { issueHouseCert, HouseCert } from './certs/houseCert'
+import { createJoinChallenge, joinChallengeToQR } from './join'
 
 export default function House() {
   const { players, setPlayers } = usePlayers()
   const { roundState, setRoundState } = useRoundState()
   const { stats } = useStats()
   const { canInstall, install, installed } = useInstallPrompt()
+  const [houseKey, setHouseKey] = React.useState<CryptoKey | null>(null)
+  const [houseCert, setHouseCert] = React.useState<HouseCert | null>(null)
+  const [joinQR, setJoinQR] = React.useState('')
+
+  React.useEffect(() => {
+    const subtle = globalThis.crypto.subtle
+    async function setup() {
+      const root = await subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify'])
+      const house = await subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify'])
+      const payload = {
+        subject: 'demo-house',
+        publicKeyJwk: await subtle.exportKey('jwk', (house as CryptoKeyPair).publicKey),
+        nbf: Date.now() - 1000,
+        exp: Date.now() + 24 * 60 * 60 * 1000,
+        capabilities: ['host rounds']
+      }
+      const cert = await issueHouseCert(payload, (root as CryptoKeyPair).privateKey)
+      setHouseKey((house as CryptoKeyPair).privateKey)
+      setHouseCert(cert)
+    }
+    setup()
+  }, [])
 
   const newRound = () => {
     setPlayers(prev => prev.map(p => ({ ...p, pool: PER_ROUND_POOL, bets: [] })))
     setRoundState('open')
+  }
+
+  const lock = async () => {
+    if (!houseKey) return
+    setRoundState('locked')
+    const certs = await lockRound(players, houseKey, String(stats.rounds + 1))
+    console.log('Bet Certs', certs)
+  }
+
+  const makeJoinQR = async () => {
+    if (!houseCert) return
+    const challenge = await createJoinChallenge(houseCert, String(stats.rounds + 1))
+    const qr = await joinChallengeToQR(challenge)
+    setJoinQR(qr)
   }
 
   return (
@@ -30,12 +69,20 @@ export default function House() {
             <span className={`roundstate ${roundState}`}>{roundState.toUpperCase()}</span>
           </div>
           <div className="ctrl-btns">
-            <button onClick={() => setRoundState('locked')}>Lock</button>
+            <button onClick={lock}>Lock</button>
             <button onClick={() => setRoundState('settled')}>Settle</button>
             <button onClick={newRound}>New Round</button>
+            <button onClick={makeJoinQR}>Join QR</button>
           </div>
         </div>
       </section>
+
+      {joinQR && (
+        <section className="bets">
+          <h3>Join Challenge QR</h3>
+          <img src={joinQR} alt="join qr" />
+        </section>
+      )}
 
       <section className="bets">
         <h3>Overall Stats</h3>
