@@ -5,6 +5,7 @@ import App from './App'
 import Player from './Player'
 import House from './House'
 import Stats from './Stats'
+import Landing from './Landing'
 import { GameProvider } from './context/GameContext'
 import './styles.css'
 
@@ -13,7 +14,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <GameProvider>
       <BrowserRouter basename="/roll-et">
         <Routes>
-          <Route path="/" element={<App />} />
+          <Route path="/" element={<Landing />} />
+          <Route path="/game" element={<App />} />
           <Route path="/player" element={<Player />} />
           <Route path="/house" element={<House />} />
           <Route path="/stats" element={<Stats />} />

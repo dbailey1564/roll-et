@@ -71,7 +71,7 @@ export default function Player() {
         </div>
         <div className="center">© Kraken Consulting, LLC (Dev Team)</div>
         <div className="right">
-          <Link className="link-btn" to="/">Game</Link>
+          <Link className="link-btn" to="/game">Game</Link>
         </div>
       </footer>
     </div>
