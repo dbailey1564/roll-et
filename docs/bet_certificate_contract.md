@@ -1,7 +1,7 @@
 # Roll-et — Bet Certificate (Bet Cert) Contract
 
 ## Purpose
-Provide a portable, offline-verifiable proof of a Player’s locked bet in a specific round. Allows Players to reopen or view their bet state securely and ensures that bets are immutable once the round is locked.
+Provide a portable, offline-verifiable proof of a Player’s locked bet in a specific round. Allows Players to reopen or view their bet state securely and ensures that bets are immutable once the round is locked. Admission to the round occurs via the [Join Challenge/Response Contract](./join_challenge_response_contract.md); if the seat was funded with a stored [BANK receipt](./bank_receipt_contract.md), that reference is bound into the Bet Cert for downstream settlement.
 
 ## Trust Chain & Roles
 - **Root Authority:** Anchor baked into PWA; signs House Certificates.  
@@ -21,19 +21,38 @@ Provide a portable, offline-verifiable proof of a Player’s locked bet in a spe
 - **Cert ID:** Unique identifier for replay protection.  
 - **Player Binding:** Player UID bound into the Cert.  
 - **Round Binding:** Round identifier included.  
-- **Bet Hash:** Cryptographic hash of the Player’s normalized bet slip.  
-- **Validity Window:** Short not-before / not-after times (minutes).  
-- **Optional Hints:** Minimal UI hints (e.g., bet summary) if desired.  
+- **Bet Hash:** Cryptographic hash of the Player’s normalized bet slip.
+- **Validity Window:** Short not-before / not-after times (minutes).
+- **Bank Reference:** Optional `bankRef` pointing to the BANK receipt ID used for the buy-in.
+- **Optional Hints:** Minimal UI hints (e.g., bet summary) if desired.
 
 ## Issuance (Input/Output)
-- **Inputs:** Normalized bet slip; Player UID; Round ID.  
-- **Process:** House computes bet hash, constructs Cert payload, signs with House key.  
-- **Outputs:** Player receives compact Cert (e.g., QR, local storage).  
+- **Inputs:** Normalized bet slip; Player UID; Round ID.
+- **Process:** House computes bet hash, constructs Cert payload, signs with House key.
+- **Outputs:** Player receives compact Cert (e.g., QR, local storage).
+
+## QR Payload Format
+Bet Certs may be exported as a compact JSON object encoded into a QR for portability:
+
+```json
+{
+  "type": "bet-cert",
+  "certId": "<uuid>",
+  "player": "<player uid>",
+  "round": "<round id>",
+  "betHash": "<sha256>",
+  "nbf": "<epoch ms>",
+  "exp": "<epoch ms>",
+  "bankRef": "<optional receiptId>"
+}
+```
+
+`bankRef` links back to the funding [BANK receipt](./bank_receipt_contract.md) if one was used. The `exp` value sets the short TTL; after expiry the Player must renew for a read‑only view.
 
 ## Renewal
-- **Purpose:** Allow Player to continue reopening a locked bet beyond initial short TTL.  
-- **Mechanism:** Player presents expired Cert to House; House verifies ledger state and issues a new short-lived Cert.  
-- **Invariants:** Renewal allowed only for read-only view; no mutation possible.  
+- **Purpose:** Allow Player to continue reopening a locked bet beyond initial short TTL.
+- **Mechanism:** Player presents expired Cert (QR or stored payload) to House; House verifies ledger state and issues a fresh Cert with an updated `exp` while keeping the original `certId` and `bankRef`.
+- **Invariants:** Renewal allowed only for read-only view; no mutation possible. Renewal requests referencing spent BANK receipts are denied.
 
 ## Verification (Offline by Player or Others)
 - **Inputs:** Bet Cert + House Certificate.  
