@@ -1,8 +1,24 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import './styles.css'
 
 export default function Landing() {
+  const navigate = useNavigate()
+
+  const handleJoinClick = async () => {
+    if (!localStorage.getItem('cameraGranted')) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+        stream.getTracks().forEach((track) => track.stop())
+        localStorage.setItem('cameraGranted', 'true')
+      } catch (e) {
+        alert('Camera permission is required to join the game.')
+        return
+      }
+    }
+    navigate('/player')
+  }
+
   return (
     <div className="container">
       <header className="header">
@@ -13,7 +29,7 @@ export default function Landing() {
 
       <section className="controls">
         <div className="actions">
-          <Link className="link-btn" to="/player">Join</Link>
+          <button className="link-btn" onClick={handleJoinClick}>Join</button>
           <Link className="link-btn" to="/house">Host</Link>
         </div>
       </section>
