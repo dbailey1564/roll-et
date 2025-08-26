@@ -33,6 +33,28 @@ export default function App() {
 
   const { canInstall, install, installed, isiOS } = useInstallPrompt()
 
+  if (players.length === 0) {
+    return (
+      <div className="container">
+        <header className="header">
+          <div className="left">
+            <span className="seat">Seat: Open</span>
+          </div>
+          <h1>Roll-et</h1>
+          <div className="right">
+            <div className="credits">
+              Round: <span className={`roundstate ${roundState}`}>{roundState.toUpperCase()}</span>
+            </div>
+          </div>
+        </header>
+        <section className="bets">
+          <div className="muted">No players joined.</div>
+        </section>
+        <FooterBar canInstall={canInstall} install={install} installed={installed} />
+      </div>
+    )
+  }
+
   const active = players[0]
   const totalStake = (p: Player) => p.bets.reduce((a,b)=>a+b.amount, 0)
   const maxForActive = Math.max(MIN_BET, active.pool)

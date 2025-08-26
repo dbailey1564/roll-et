@@ -12,6 +12,7 @@ export type Stats = {
 type GameContextValue = {
   players: Player[]
   setPlayers: React.Dispatch<React.SetStateAction<Player[]>>
+  addPlayer: (name: string) => void
   roundState: RoundState
   setRoundState: React.Dispatch<React.SetStateAction<RoundState>>
   stats: Stats
@@ -21,17 +22,17 @@ type GameContextValue = {
 const GameContext = React.createContext<GameContextValue | undefined>(undefined)
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const playersInit: Player[] = React.useMemo(() => (
-    [1, 2, 3, 4].map(i => ({
-      id: i,
-      name: `P${i}`,
-      bets: [],
-      pool: PER_ROUND_POOL,
-      bank: 0,
-    }))
-  ), [])
+  const [players, setPlayers] = React.useState<Player[]>([])
 
-  const [players, setPlayers] = React.useState<Player[]>(playersInit)
+  const addPlayer = React.useCallback((name: string) => {
+    setPlayers(prev => {
+      if (prev.length >= 4) return prev
+      const seat = [1, 2, 3, 4].find(i => !prev.some(p => p.id === i))
+      if (!seat) return prev
+      const newPlayer: Player = { id: seat, name, bets: [], pool: PER_ROUND_POOL, bank: 0 }
+      return [...prev, newPlayer].sort((a, b) => a.id - b.id)
+    })
+  }, [])
   const [roundState, setRoundState] = React.useState<RoundState>('locked')
   const [stats, setStats] = React.useState<Stats>(() => {
     try {
@@ -54,7 +55,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [stats])
 
   return (
-    <GameContext.Provider value={{ players, setPlayers, roundState, setRoundState, stats, setStats }}>
+    <GameContext.Provider value={{ players, setPlayers, addPlayer, roundState, setRoundState, stats, setStats }}>
       {children}
     </GameContext.Provider>
   )
@@ -67,8 +68,8 @@ export function useGameContext() {
 }
 
 export function usePlayers() {
-  const { players, setPlayers } = useGameContext()
-  return { players, setPlayers }
+  const { players, setPlayers, addPlayer } = useGameContext()
+  return { players, setPlayers, addPlayer }
 }
 
 export function useRoundState() {

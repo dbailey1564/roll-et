@@ -49,13 +49,15 @@ export default function Stats() {
       <section className="bets">
         <h3>Player Banks (credits)</h3>
         <ul>
-          {[1, 2, 3, 4].map(pid => (
-            <li key={pid}>
-              <span>P{pid}</span>
-              <span> — </span>
-              <strong>{(stats.banks && stats.banks[pid]) ? stats.banks[pid] : 0}</strong>
-            </li>
-          ))}
+          {Object.entries(stats.banks)
+            .sort(([a], [b]) => Number(a) - Number(b))
+            .map(([pid, bank]) => (
+              <li key={pid}>
+                <span>P{pid}</span>
+                <span> — </span>
+                <strong>{bank}</strong>
+              </li>
+            ))}
         </ul>
       </section>
 
