@@ -1,6 +1,7 @@
 import type { Player } from './types'
 import type { Bet } from './game/engine'
 import { generateBetCert, BetCert } from './certs/betCert'
+import { bytesToHex } from './encoding'
 const subtle = globalThis.crypto.subtle
 const encoder = new TextEncoder()
 
@@ -16,7 +17,7 @@ function uuid(): string {
 async function hashBets(bets: Bet[]): Promise<string> {
   const data = encoder.encode(JSON.stringify(bets))
   const hashBuf = await subtle.digest('SHA-256', data)
-  return Buffer.from(hashBuf).toString('hex')
+  return bytesToHex(hashBuf)
 }
 
 export async function lockRound(players: Player[], houseKey: CryptoKey, roundId: string): Promise<BetCert[]> {

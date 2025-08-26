@@ -1,3 +1,4 @@
+import { base64UrlEncode, base64UrlDecode } from '../encoding'
 const subtle = globalThis.crypto.subtle
 const encoder = new TextEncoder()
 
@@ -19,12 +20,12 @@ export interface BetCert extends BetCertPayload {
 async function signPayload(payload: BetCertPayload, key: CryptoKey): Promise<string> {
   const data = encoder.encode(JSON.stringify(payload))
   const sig = await subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, data)
-  return Buffer.from(sig).toString('base64url')
+  return base64UrlEncode(sig)
 }
 
 async function verifyPayload(payload: BetCertPayload, sig: string, key: CryptoKey): Promise<boolean> {
   const data = encoder.encode(JSON.stringify(payload))
-  const signature = Buffer.from(sig, 'base64url')
+  const signature = base64UrlDecode(sig)
   return subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, signature, data)
 }
 

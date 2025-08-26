@@ -1,5 +1,6 @@
 import { HouseCert, validateHouseCert } from './certs/houseCert'
 import QRCode from 'qrcode'
+import { base64UrlEncode } from './encoding'
 
 const subtle = globalThis.crypto.subtle
 const encoder = new TextEncoder()
@@ -16,7 +17,7 @@ export interface JoinChallenge {
 export async function createJoinChallenge(houseCert: HouseCert, round: string, ttlMs: number = 15000): Promise<JoinChallenge> {
   const nonceArr = new Uint8Array(16)
   globalThis.crypto.getRandomValues(nonceArr)
-  const nonce = Buffer.from(nonceArr).toString('base64url')
+  const nonce = base64UrlEncode(nonceArr)
   const now = Date.now()
   return { type: 'join-challenge', houseCert, round, nonce, nbf: now, exp: now + ttlMs }
 }
@@ -52,9 +53,9 @@ export async function createJoinResponse(
 ): Promise<JoinResponse> {
   const data = encoder.encode(`${playerId}|${challenge.round}|${challenge.nonce}`)
   const hmacBuf = await subtle.sign('HMAC', secret, data)
-  const hmac = Buffer.from(hmacBuf).toString('base64url')
+  const hmac = base64UrlEncode(hmacBuf)
   const payload = { player: playerId, round: challenge.round, nonce: challenge.nonce, hmac, bankRef }
   const sigBuf = await subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, playerKey, encoder.encode(JSON.stringify(payload)))
-  const sig = Buffer.from(sigBuf).toString('base64url')
+  const sig = base64UrlEncode(sigBuf)
   return { ...payload, sig }
 }
