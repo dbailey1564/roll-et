@@ -5,14 +5,15 @@ import { MemoryRouter } from 'react-router-dom';
 import Stats from '../Stats';
 
 const mockSetStats = vi.fn();
+const statsData = {
+  rounds: 5,
+  hits: Array.from({ length: 21 }, (_, i) => i),
+  banks: { 1: 100, 2: 200, 3: 0, 4: 0 },
+};
 
 vi.mock('../context/GameContext', () => ({
   useStats: () => ({
-    stats: {
-      rounds: 5,
-      hits: Array.from({ length: 21 }, (_, i) => i),
-      banks: { 1: 100, 2: 200, 3: 0, 4: 0 },
-    },
+    stats: statsData,
     setStats: mockSetStats,
   }),
 }));
@@ -29,6 +30,7 @@ describe('Stats page', () => {
     expect(rounds.parentElement).toHaveTextContent('Rounds: 5');
 
     const bankItems = screen.getAllByRole('listitem');
+    expect(bankItems).toHaveLength(Object.keys(statsData.banks).length);
     expect(bankItems[0]).toHaveTextContent('P1');
     expect(bankItems[0]).toHaveTextContent('100');
 
