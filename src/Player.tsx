@@ -79,9 +79,15 @@ export default function Player() {
         </section>
       )}
 
-      {scanningReceipt && (
+      {scanningReceipt && housePublicKey && (
         <section className="bets">
-          <BankReceiptScanner onReceipt={r => { setLastReceipt(r); setScanningReceipt(false) }} />
+          <BankReceiptScanner
+            housePublicKey={housePublicKey}
+            onReceipt={r => {
+              setLastReceipt(r)
+              setScanningReceipt(false)
+            }}
+          />
         </section>
       )}
 
