@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { usePlayers, useRoundState, useStats, PER_ROUND_POOL } from './context/GameContext'
+import { usePlayers, useRoundState, useStats, PER_ROUND_POOL, useHouse } from './context/GameContext'
 import { fmtUSDSign } from './utils'
 import { useInstallPrompt } from './pwa/useInstallPrompt'
 import { lockRound } from './round'
@@ -13,7 +13,7 @@ export default function House() {
   const { roundState, setRoundState } = useRoundState()
   const { stats } = useStats()
   const { canInstall, install, installed } = useInstallPrompt()
-  const [houseKey, setHouseKey] = React.useState<CryptoKey | null>(null)
+  const { houseKey, setBetCerts, receipts } = useHouse()
   const [houseCert, setHouseCert] = React.useState<HouseCert | null>(null)
   const [joinQR, setJoinQR] = React.useState('')
   const [betCertQRs, setBetCertQRs] = React.useState<Array<{ player: string; qr: string }>>([])
@@ -21,36 +21,40 @@ export default function House() {
   React.useEffect(() => {
     const subtle = globalThis.crypto.subtle
     async function setup() {
+      if (!houseKey) return
       const root = await subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify'])
-      const house = await subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify'])
       const payload = {
         subject: 'demo-house',
-        publicKeyJwk: await subtle.exportKey('jwk', (house as CryptoKeyPair).publicKey),
+        publicKeyJwk: await subtle.exportKey('jwk', houseKey.publicKey),
         nbf: Date.now() - 1000,
         exp: Date.now() + 24 * 60 * 60 * 1000,
         capabilities: ['host rounds']
       }
       const cert = await issueHouseCert(payload, (root as CryptoKeyPair).privateKey)
-      setHouseKey((house as CryptoKeyPair).privateKey)
       setHouseCert(cert)
     }
     setup()
-  }, [])
+  }, [houseKey])
 
   const newRound = () => {
     setPlayers(prev => prev.map(p => ({ ...p, pool: PER_ROUND_POOL, bets: [] })))
     setRoundState('open')
     setBetCertQRs([])
+    setBetCerts({})
   }
 
   const lock = async () => {
     if (!houseKey) return
     setRoundState('locked')
-    const certs = await lockRound(players, houseKey, String(stats.rounds + 1))
+    const certs = await lockRound(players, houseKey.privateKey, String(stats.rounds + 1))
     const qrs = await Promise.all(
       certs.map(async c => ({ player: c.player, qr: await betCertToQR(c) }))
     )
     setBetCertQRs(qrs)
+    setBetCerts(certs.reduce<Record<number, string>>((acc, c) => {
+      acc[Number(c.player)] = c.certId
+      return acc
+    }, {}))
   }
 
   const makeJoinQR = async () => {
@@ -97,6 +101,24 @@ export default function House() {
             <div key={b.player}>
               <div>Player {b.player}</div>
               <img src={b.qr} alt={`bet cert ${b.player}`} />
+            </div>
+          ))}
+        </section>
+      )}
+
+      {receipts.length > 0 && (
+        <section className="bets">
+          <h3>Bank Receipts</h3>
+          {receipts.map(r => (
+            <div key={r.player}>
+              <div>Player {r.player}</div>
+              <img src={r.qr} alt={`receipt ${r.player}`} />
+              <a
+                href={`data:application/json,${encodeURIComponent(JSON.stringify(r.receipt))}`}
+                download={`receipt-${r.player}.json`}
+              >
+                Download
+              </a>
             </div>
           ))}
         </section>
