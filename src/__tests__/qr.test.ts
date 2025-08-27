@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import jsQR from 'jsqr'
+import Jimp from 'jimp'
 import { issueHouseCert } from '../certs/houseCert'
 import { createJoinChallenge, joinChallengeToQR, parseJoinChallenge, validateJoinChallenge } from '../join'
 import { betCertToQR, parseBetCert } from '../betCertQR'
@@ -52,5 +54,28 @@ describe('QR flows', () => {
     expect(receiptQR.startsWith('data:image/png;base64')).toBe(true)
     const parsedReceipt = parseBankReceipt(JSON.stringify(receipt))
     expect(parsedReceipt.receiptId).toBe(receipt.receiptId)
+  })
+
+  it('encodes and decodes a bank receipt QR round trip', async () => {
+    const house = await genKeyPair()
+    const receipt = await issueBankReceipt({
+      receiptId: 'rec2',
+      player: 'p2',
+      round: 'r2',
+      value: 20,
+      nbf: Date.now() - 1000,
+      exp: Date.now() + 60_000,
+      betCertRef: 'cert2',
+    }, house.privateKey)
+
+    const dataUrl = await bankReceiptToQR(receipt)
+    const buf = Buffer.from(dataUrl.split(',')[1], 'base64')
+    const image = await Jimp.read(buf)
+    const { data, width, height } = image.bitmap
+    const code = jsQR(new Uint8ClampedArray(data), width, height)
+    expect(code).toBeTruthy()
+
+    const parsed = parseBankReceipt(code!.data)
+    expect(parsed).toEqual(receipt)
   })
 })
