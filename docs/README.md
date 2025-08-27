@@ -18,3 +18,9 @@ This directory collects design and contract specifications for Roll-et, an offli
 4. [Ledger & Sync](ledger_sync_contract.md) – records every admission, certificate and receipt, enforcing the game's $1,440/player/round ceiling during sync.
 
 These documents describe how each step chains to the next: [Join Challenge/Response](join_challenge_response_contract.md) → [Bet Certificate](bet_certificate_contract.md) → [BANK Receipt](bank_receipt_contract.md), all anchored by the [House Certificate](house_certificate_contract.md) and recorded in the [Ledger & Sync](ledger_sync_contract.md).
+
+## QR Helpers & Scanning
+Roll‑et uses QRs to move join challenges, Bet Certs and BANK Receipts between devices. Helper modules and components provide a consistent experience:
+
+- [`betCertQR.ts`](../src/betCertQR.ts) & [`bankReceiptQR.ts`](../src/bankReceiptQR.ts) generate data URL images and parse payloads for Bet Certs and BANK Receipts.
+- Scanner components such as [`BetCertScanner`](../src/components/BetCertScanner.tsx) and [`BankReceiptScanner`](../src/components/BankReceiptScanner.tsx) attempt the browser `BarcodeDetector` API (Chrome ≥83, Edge ≥83, Opera ≥70, Android WebView ≥88) with a [`jsQR`](https://github.com/cozmo/jsQR) fallback for browsers lacking support.

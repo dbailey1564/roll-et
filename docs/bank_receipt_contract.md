@@ -55,6 +55,10 @@ Receipts can be exported or transferred as a JSON payload encoded into a QR:
 
 The `sig` field is the House's signature over the payload. Signature bytes are base64url‑encoded using the shared helper functions in `src/utils/base64.ts` (`bytesToBase64Url` / `base64UrlToBytes`), which work in both browser and Node environments.
 
+## QR Generation & Scanning
+- BANK Receipts may be exported or transported as QR codes using [`bankReceiptQR.ts`](../src/bankReceiptQR.ts), which includes helpers for creating data URL images and parsing scanned payloads.
+- The [`BankReceiptScanner`](../src/components/BankReceiptScanner.tsx) component reads receipt QRs. It attempts the native `BarcodeDetector` API first (Chrome ≥83, Edge ≥83, Opera ≥70, Android WebView ≥88) and falls back to [`jsQR`](https://github.com/cozmo/jsQR) via canvas capture for Safari, Firefox and older Chromium releases.
+
 ## Usage Paths
 - **Re-buy into round:** Player presents receipt; House verifies validity and converts value into the 4-credit round entry at the declared valuation (up to 8 credits cap). Any leftover remains stored.
 - **Withdraw (tender):** Player presents receipt; House verifies and pays out; marks receipt “spent.”

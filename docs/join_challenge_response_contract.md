@@ -47,6 +47,11 @@ Provide a secure, offline-verifiable admission mechanism for Players to join a H
 
 All binary values—the House certificate's `signature`, the challenge `nonce`, the response `hmac`, and the Player `sig`—are base64url-encoded. Developers should use the shared helpers in `src/utils/base64.ts` (`bytesToBase64Url` / `base64UrlToBytes`) to handle these fields. The utilities abstract away environment differences by using browser `btoa`/`atob` when available and falling back to Node's `Buffer` APIs so the same code works across platforms.
 
+## QR Generation & Scanning
+- Join challenges, [Bet Certificates](./bet_certificate_contract.md) and [BANK Receipts](./bank_receipt_contract.md) can be rendered as QRs for portability. Helper modules in [`betCertQR.ts`](../src/betCertQR.ts) and [`bankReceiptQR.ts`](../src/bankReceiptQR.ts) generate data URL images and parse scanned payloads.
+- Scanning leverages the browser `BarcodeDetector` API when supported (Chrome ≥83, Edge ≥83, Opera ≥70, Android WebView ≥88). Browsers without support (Safari, Firefox, older Chromium) fall back to [`jsQR`](https://github.com/cozmo/jsQR) using a canvas capture.
+- The [`BetCertScanner`](../src/components/BetCertScanner.tsx) and [`BankReceiptScanner`](../src/components/BankReceiptScanner.tsx) components implement this detection flow for Bet Certs and BANK Receipts respectively.
+
 ## Challenge Requirements
 - **Contents:**  
   - House Certificate  
