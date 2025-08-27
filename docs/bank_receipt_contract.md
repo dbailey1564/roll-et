@@ -46,11 +46,14 @@ Receipts can be exported or transferred as a JSON payload encoded into a QR:
   "nbf": "<epoch ms>",
   "exp": "<optional epoch ms>",
   "spent": false,
-  "betCertRef": "<bet cert id>"
+  "betCertRef": "<bet cert id>",
+  "sig": "<house signature>"
 }
 ```
 
 `betCertRef` links the receipt back to the [Bet Certificate](./bet_certificate_contract.md) that produced the settlement. The `exp` field (if present) governs when the receipt must be renewed.
+
+The `sig` field is the House's signature over the payload. Signature bytes are base64url‑encoded using the shared helper functions in `src/utils/base64.ts` (`bytesToBase64Url` / `base64UrlToBytes`), which work in both browser and Node environments.
 
 ## Usage Paths
 - **Re-buy into round:** Player presents receipt; House verifies validity and converts value into the 4-credit round entry at the declared valuation (up to 8 credits cap). Any leftover remains stored.

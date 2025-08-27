@@ -9,6 +9,8 @@ Authorize a device/operator to run **House** features for Roll‑et. Enables hos
 - **House Device(s):** Hold the private key corresponding to the public key attested in the Cert.
 - **Players:** Verify the Cert offline before joining a round.
 
+`HouseCert` is structured as a payload plus a `signature` field. The signature bytes are base64url‑encoded using the shared helpers in `src/utils/base64.ts` (`bytesToBase64Url` / `base64UrlToBytes`), which support both browsers and Node (via `btoa`/`atob` or Node's `Buffer`).
+
 ## Lifecycle & States
 1. **Issue** (monetized): Cert created after purchase/entitlement check.
 2. **Active:** Within validity window; grants hosting capabilities.
