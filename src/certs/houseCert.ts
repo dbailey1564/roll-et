@@ -26,6 +26,7 @@ async function signPayload(payload: any, key: CryptoKey): Promise<string> {
 async function verifyPayload(payload: any, signature: string, key: CryptoKey): Promise<boolean> {
   const data = encoder.encode(JSON.stringify(payload))
   const sig = base64UrlToBytes(signature) as Uint8Array<ArrayBuffer>
+
   return subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, sig, data)
 }
 
