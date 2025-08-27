@@ -43,11 +43,14 @@ Bet Certs may be exported as a compact JSON object encoded into a QR for portabi
   "betHash": "<sha256>",
   "nbf": "<epoch ms>",
   "exp": "<epoch ms>",
-  "bankRef": "<optional receiptId>"
+  "bankRef": "<optional receiptId>",
+  "sig": "<house signature>"
 }
 ```
 
 `bankRef` links back to the funding [BANK Receipt](./bank_receipt_contract.md) if one was used. The `exp` value sets the short TTL; after expiry the Player must renew for a read‑only view.
+
+The `sig` field contains the House's signature over the payload. Signature bytes are base64url‑encoded using the shared helper functions in `src/utils/base64.ts` (`bytesToBase64Url` / `base64UrlToBytes`), which support both browser and Node environments.
 
 ## Renewal
 - **Purpose:** Allow Player to continue reopening a locked bet beyond initial short TTL.

@@ -1,22 +1,24 @@
-export function bytesToBase64Url(bytes: Uint8Array): string {
-  // Detect if the global btoa function is available (typically in browsers)
+function base64FromBytes(bytes: Uint8Array): string {
   if (typeof btoa === 'function') {
     let binary = ''
-    for (const b of bytes) {
-      binary += String.fromCharCode(b)
-    }
+    for (const b of bytes) binary += String.fromCharCode(b)
     return btoa(binary)
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/g, '')
   }
+  return Buffer.from(bytes).toString('base64')
+}
 
-  // Fall back to Node.js Buffer when btoa is unavailable
-  return Buffer.from(bytes)
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/g, '')
+function bytesFromBase64(base64: string): Uint8Array {
+  if (typeof atob === 'function') {
+    const binary = atob(base64)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+    return bytes
+  }
+  return Uint8Array.from(Buffer.from(base64, 'base64'))
+}
+
+export function bytesToBase64Url(bytes: Uint8Array): string {
+  return base64FromBytes(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
 }
 
 export function base64UrlToBytes(base64url: string): Uint8Array {

@@ -45,6 +45,8 @@ Provide a secure, offline-verifiable admission mechanism for Players to join a H
 
 `bankRef` allows a Player to fund the buy-in with a stored [BANK Receipt](./bank_receipt_contract.md). When admission succeeds, this `bankRef` is logged and later embedded in the resulting [Bet Certificate](./bet_certificate_contract.md).
 
+All binary values—the House certificate's `signature`, the challenge `nonce`, the response `hmac`, and the Player `sig`—are base64url-encoded. Developers should use the shared helpers in `src/utils/base64.ts` (`bytesToBase64Url` / `base64UrlToBytes`) to handle these fields. The utilities abstract away environment differences by using browser `btoa`/`atob` when available and falling back to Node's `Buffer` APIs so the same code works across platforms.
+
 ## Challenge Requirements
 - **Contents:**  
   - House Certificate  
