@@ -8,14 +8,16 @@ import { useInstallPrompt } from './pwa/useInstallPrompt'
 import type { BetMode, Player } from './types'
 import { clampInt, fmtUSD, fmtUSDSign } from './utils'
 import { useBetActions } from './hooks/useBetActions'
-import { usePlayers, useRoundState, useStats, PER_ROUND_POOL } from './context/GameContext'
+import { usePlayers, useRoundState, useStats, PER_ROUND_POOL, useHouse } from './context/GameContext'
+import { issueReceiptsForWinners } from './receipts'
 
 const MIN_BET = 1
 
 export default function App() {
   const { players, setPlayers } = usePlayers()
   const { roundState, setRoundState } = useRoundState()
-  const { setStats } = useStats()
+  const { stats, setStats } = useStats()
+  const { houseKey, betCerts, setBetCerts, setReceipts } = useHouse()
 
   const DEFAULT_BET = 1
   const [amount, setAmount] = React.useState<number>(() => {
@@ -135,7 +137,7 @@ export default function App() {
 
   const lockRound = () => { setRoundState('locked') }
 
-  const settleRound = () => {
+  const settleRound = async () => {
     if(roundState!=='locked') return
     const roll = Number(enteredRoll)
     if(!Number.isInteger(roll) || roll<1 || roll>20) return
@@ -157,6 +159,15 @@ export default function App() {
       return { rounds: prev.rounds + 1, hits, banks }
     })
 
+    if (houseKey) {
+      const winners = players
+        .filter(p => deltas[p.id] > 0)
+        .map(p => ({ player: p.id, value: deltas[p.id], betCertRef: betCerts[p.id] || '' }))
+      const roundId = String(stats.rounds + 1)
+      const recs = await issueReceiptsForWinners(winners, roundId, houseKey.privateKey)
+      setReceipts(recs)
+    }
+
     setPlayers(nextPlayers)
     setHistory(h => [{ roll, deltas, time: Date.now() }, ...h].slice(0, 30))
     setWinning(roll)
@@ -168,6 +179,8 @@ export default function App() {
     setEnteredRoll('')
     setWinning(null)
     setRoundState('open')
+    setBetCerts({})
+    setReceipts([])
   }
 
   const describeBet = (b: Bet) => {

@@ -1,5 +1,6 @@
 import React from 'react'
 import type { Player, RoundState } from '../types'
+import type { BankReceipt } from '../certs/bankReceipt'
 
 export const PER_ROUND_POOL = 8
 
@@ -9,6 +10,8 @@ export type Stats = {
   banks: Record<number, number>
 }
 
+export type ReceiptRecord = { player: string; receipt: BankReceipt; qr: string }
+
 type GameContextValue = {
   players: Player[]
   setPlayers: React.Dispatch<React.SetStateAction<Player[]>>
@@ -17,12 +20,27 @@ type GameContextValue = {
   setRoundState: React.Dispatch<React.SetStateAction<RoundState>>
   stats: Stats
   setStats: React.Dispatch<React.SetStateAction<Stats>>
+  houseKey: CryptoKeyPair | null
+  betCerts: Record<number, string>
+  setBetCerts: React.Dispatch<React.SetStateAction<Record<number, string>>>
+  receipts: ReceiptRecord[]
+  setReceipts: React.Dispatch<React.SetStateAction<ReceiptRecord[]>>
 }
 
 const GameContext = React.createContext<GameContextValue | undefined>(undefined)
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [players, setPlayers] = React.useState<Player[]>([])
+  const [houseKey, setHouseKey] = React.useState<CryptoKeyPair | null>(null)
+  const [betCerts, setBetCerts] = React.useState<Record<number, string>>({})
+  const [receipts, setReceipts] = React.useState<ReceiptRecord[]>(() => {
+    try {
+      const raw = localStorage.getItem('roll_et_receipts')
+      return raw ? (JSON.parse(raw) as ReceiptRecord[]) : []
+    } catch {
+      return []
+    }
+  })
 
   const addPlayer = React.useCallback((name: string) => {
     setPlayers(prev => {
@@ -54,8 +72,23 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {}
   }, [stats])
 
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('roll_et_receipts', JSON.stringify(receipts))
+    } catch {}
+  }, [receipts])
+
+  React.useEffect(() => {
+    const subtle = globalThis.crypto.subtle
+    async function setup() {
+      const pair = await subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify'])
+      setHouseKey(pair as CryptoKeyPair)
+    }
+    setup()
+  }, [])
+
   return (
-    <GameContext.Provider value={{ players, setPlayers, addPlayer, roundState, setRoundState, stats, setStats }}>
+    <GameContext.Provider value={{ players, setPlayers, addPlayer, roundState, setRoundState, stats, setStats, houseKey, betCerts, setBetCerts, receipts, setReceipts }}>
       {children}
     </GameContext.Provider>
   )
@@ -80,5 +113,10 @@ export function useRoundState() {
 export function useStats() {
   const { stats, setStats } = useGameContext()
   return { stats, setStats }
+}
+
+export function useHouse() {
+  const { houseKey, betCerts, setBetCerts, receipts, setReceipts } = useGameContext()
+  return { houseKey, betCerts, setBetCerts, receipts, setReceipts }
 }
 
