@@ -6,7 +6,9 @@ import { getOdds } from './game/engine'
 import type { Bet } from './game/engine'
 import { useInstallPrompt } from './pwa/useInstallPrompt'
 import BetCertScanner from './components/BetCertScanner'
+import BankReceiptScanner from './components/BankReceiptScanner'
 import type { BetCert } from './certs/betCert'
+import type { BankReceipt } from './certs/bankReceipt'
 
 function describeBet(b: Bet): string {
   switch (b.type) {
@@ -34,8 +36,10 @@ function potential(b: Bet): number {
 export default function Player() {
   const { players } = usePlayers()
   const { canInstall, install, installed } = useInstallPrompt()
-  const [scanning, setScanning] = React.useState(false)
+  const [scanningCert, setScanningCert] = React.useState(false)
+  const [scanningReceipt, setScanningReceipt] = React.useState(false)
   const [lastCert, setLastCert] = React.useState<BetCert | null>(null)
+  const [lastReceipt, setLastReceipt] = React.useState<BankReceipt | null>(null)
 
   return (
     <div className="container">
@@ -46,12 +50,19 @@ export default function Player() {
       </header>
 
       <section className="controls">
-        <button onClick={() => setScanning(true)}>Scan Bet Cert</button>
+        <button onClick={() => setScanningCert(true)}>Scan Bet Cert</button>
+        <button onClick={() => setScanningReceipt(true)}>Scan Bank Receipt</button>
       </section>
 
-      {scanning && (
+      {scanningCert && (
         <section className="bets">
-          <BetCertScanner onCert={cert => { setLastCert(cert); setScanning(false) }} />
+          <BetCertScanner onCert={cert => { setLastCert(cert); setScanningCert(false) }} />
+        </section>
+      )}
+
+      {scanningReceipt && (
+        <section className="bets">
+          <BankReceiptScanner onReceipt={r => { setLastReceipt(r); setScanningReceipt(false) }} />
         </section>
       )}
 
@@ -59,6 +70,13 @@ export default function Player() {
         <section className="bets">
           <h3>Last Bet Cert</h3>
           <pre>{JSON.stringify(lastCert, null, 2)}</pre>
+        </section>
+      )}
+
+      {lastReceipt && (
+        <section className="bets">
+          <h3>Last Bank Receipt</h3>
+          <pre>{JSON.stringify(lastReceipt, null, 2)}</pre>
         </section>
       )}
 
