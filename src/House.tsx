@@ -6,6 +6,7 @@ import { useInstallPrompt } from './pwa/useInstallPrompt'
 import { lockRound } from './round'
 import { issueHouseCert, HouseCert } from './certs/houseCert'
 import { createJoinChallenge, joinChallengeToQR } from './join'
+import { betCertToQR } from './betCertQR'
 
 export default function House() {
   const { players, setPlayers } = usePlayers()
@@ -15,6 +16,7 @@ export default function House() {
   const [houseKey, setHouseKey] = React.useState<CryptoKey | null>(null)
   const [houseCert, setHouseCert] = React.useState<HouseCert | null>(null)
   const [joinQR, setJoinQR] = React.useState('')
+  const [betCertQRs, setBetCertQRs] = React.useState<Array<{ player: string; qr: string }>>([])
 
   React.useEffect(() => {
     const subtle = globalThis.crypto.subtle
@@ -38,13 +40,17 @@ export default function House() {
   const newRound = () => {
     setPlayers(prev => prev.map(p => ({ ...p, pool: PER_ROUND_POOL, bets: [] })))
     setRoundState('open')
+    setBetCertQRs([])
   }
 
   const lock = async () => {
     if (!houseKey) return
     setRoundState('locked')
     const certs = await lockRound(players, houseKey, String(stats.rounds + 1))
-    console.log('Bet Certs', certs)
+    const qrs = await Promise.all(
+      certs.map(async c => ({ player: c.player, qr: await betCertToQR(c) }))
+    )
+    setBetCertQRs(qrs)
   }
 
   const makeJoinQR = async () => {
@@ -81,6 +87,18 @@ export default function House() {
         <section className="bets">
           <h3>Join Challenge QR</h3>
           <img src={joinQR} alt="join qr" />
+        </section>
+      )}
+
+      {betCertQRs.length > 0 && (
+        <section className="bets">
+          <h3>Bet Certs</h3>
+          {betCertQRs.map(b => (
+            <div key={b.player}>
+              <div>Player {b.player}</div>
+              <img src={b.qr} alt={`bet cert ${b.player}`} />
+            </div>
+          ))}
         </section>
       )}
 

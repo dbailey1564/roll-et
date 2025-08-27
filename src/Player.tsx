@@ -5,6 +5,8 @@ import { fmtUSD, fmtUSDSign } from './utils'
 import { getOdds } from './game/engine'
 import type { Bet } from './game/engine'
 import { useInstallPrompt } from './pwa/useInstallPrompt'
+import BetCertScanner from './components/BetCertScanner'
+import type { BetCert } from './certs/betCert'
 
 function describeBet(b: Bet): string {
   switch (b.type) {
@@ -32,6 +34,8 @@ function potential(b: Bet): number {
 export default function Player() {
   const { players } = usePlayers()
   const { canInstall, install, installed } = useInstallPrompt()
+  const [scanning, setScanning] = React.useState(false)
+  const [lastCert, setLastCert] = React.useState<BetCert | null>(null)
 
   return (
     <div className="container">
@@ -40,6 +44,23 @@ export default function Player() {
         <h1>Player Summary</h1>
         <div className="right" />
       </header>
+
+      <section className="controls">
+        <button onClick={() => setScanning(true)}>Scan Bet Cert</button>
+      </section>
+
+      {scanning && (
+        <section className="bets">
+          <BetCertScanner onCert={cert => { setLastCert(cert); setScanning(false) }} />
+        </section>
+      )}
+
+      {lastCert && (
+        <section className="bets">
+          <h3>Last Bet Cert</h3>
+          <pre>{JSON.stringify(lastCert, null, 2)}</pre>
+        </section>
+      )}
 
       <section className="bets">
         {players.map(p => (
