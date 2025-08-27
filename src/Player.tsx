@@ -40,6 +40,19 @@ export default function Player() {
   const [scanningReceipt, setScanningReceipt] = React.useState(false)
   const [lastCert, setLastCert] = React.useState<BetCert | null>(null)
   const [lastReceipt, setLastReceipt] = React.useState<BankReceipt | null>(null)
+  const [housePublicKey, setHousePublicKey] = React.useState<CryptoKey | null>(null)
+
+  React.useEffect(() => {
+    ;(async () => {
+      // TODO: Replace with real house public key from join flow
+      const pair = await crypto.subtle.generateKey(
+        { name: 'ECDSA', namedCurve: 'P-256' },
+        true,
+        ['sign', 'verify']
+      )
+      setHousePublicKey((pair as CryptoKeyPair).publicKey)
+    })()
+  }, [])
 
   return (
     <div className="container">
@@ -54,9 +67,15 @@ export default function Player() {
         <button onClick={() => setScanningReceipt(true)}>Scan Bank Receipt</button>
       </section>
 
-      {scanningCert && (
+      {scanningCert && housePublicKey && (
         <section className="bets">
-          <BetCertScanner onCert={cert => { setLastCert(cert); setScanningCert(false) }} />
+          <BetCertScanner
+            housePublicKey={housePublicKey}
+            onCert={cert => {
+              setLastCert(cert)
+              setScanningCert(false)
+            }}
+          />
         </section>
       )}
 

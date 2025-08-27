@@ -1,13 +1,15 @@
 import React from 'react'
 import jsQR from 'jsqr'
 import { parseBetCert } from '../betCertQR'
+import { verifyBetCert } from '../certs/betCert'
 import type { BetCert } from '../certs/betCert'
 
 interface BetCertScannerProps {
   onCert: (cert: BetCert) => void
+  housePublicKey: CryptoKey
 }
 
-export default function BetCertScanner({ onCert }: BetCertScannerProps) {
+export default function BetCertScanner({ onCert, housePublicKey }: BetCertScannerProps) {
   const videoRef = React.useRef<HTMLVideoElement>(null)
   const streamRef = React.useRef<MediaStream | null>(null)
   const detectorRef = React.useRef<any>(null)
@@ -77,9 +79,14 @@ export default function BetCertScanner({ onCert }: BetCertScannerProps) {
     requestAnimationFrame(scan)
   }
 
-  const handlePayload = (raw: string) => {
+  const handlePayload = async (raw: string) => {
     try {
       const cert = parseBetCert(raw)
+      const valid = await verifyBetCert(cert, housePublicKey)
+      if (!valid) {
+        setError('Invalid Bet Cert')
+        return
+      }
       onCert(cert)
       streamRef.current?.getTracks().forEach(t => t.stop())
     } catch (e) {
