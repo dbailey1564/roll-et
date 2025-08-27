@@ -1,4 +1,5 @@
 import React from 'react'
+import jsQR from 'jsqr'
 import { parseJoinChallenge, validateJoinChallenge, createJoinResponse, JoinResponse } from '../join'
 
 interface JoinScannerProps {
@@ -13,6 +14,7 @@ export default function JoinScanner({ playerId, playerKey, playerSecret, rootKey
   const videoRef = React.useRef<HTMLVideoElement>(null)
   const streamRef = React.useRef<MediaStream | null>(null)
   const detectorRef = React.useRef<any>(null)
+  const canvasRef = React.useRef<HTMLCanvasElement | null>(null)
   const [error, setError] = React.useState<string | null>(null)
 
   React.useEffect(() => {
@@ -43,21 +45,37 @@ export default function JoinScanner({ playerId, playerKey, playerSecret, rootKey
       requestAnimationFrame(scan)
       return
     }
-    if (!('BarcodeDetector' in window)) {
-      setError('Barcode detection not supported')
-      return
-    }
-    try {
-      if (!detectorRef.current) {
-        detectorRef.current = new (window as any).BarcodeDetector({ formats: ['qr_code'] })
+    if ('BarcodeDetector' in window) {
+      try {
+        if (!detectorRef.current) {
+          detectorRef.current = new (window as any).BarcodeDetector({ formats: ['qr_code'] })
+        }
+        const codes = await detectorRef.current.detect(videoRef.current)
+        if (codes.length > 0) {
+          handlePayload(codes[0].rawValue)
+          return
+        }
+      } catch (err) {
+        console.error(err)
       }
-      const codes = await detectorRef.current.detect(videoRef.current)
-      if (codes.length > 0) {
-        handlePayload(codes[0].rawValue)
-        return
+    } else {
+      if (!canvasRef.current) {
+        canvasRef.current = document.createElement('canvas')
       }
-    } catch (err) {
-      console.error(err)
+      const canvas = canvasRef.current
+      const video = videoRef.current
+      const ctx = canvas.getContext('2d')
+      if (ctx && video.videoWidth > 0 && video.videoHeight > 0) {
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        const code = jsQR(imageData.data, canvas.width, canvas.height)
+        if (code) {
+          handlePayload(code.data)
+          return
+        }
+      }
     }
     requestAnimationFrame(scan)
   }
