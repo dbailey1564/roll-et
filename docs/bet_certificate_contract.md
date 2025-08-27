@@ -52,6 +52,10 @@ Bet Certs may be exported as a compact JSON object encoded into a QR for portabi
 
 The `sig` field contains the House's signature over the payload. Signature bytes are base64url‑encoded using the shared helper functions in `src/utils/base64.ts` (`bytesToBase64Url` / `base64UrlToBytes`), which support both browser and Node environments.
 
+## QR Generation & Scanning
+- Bet Cert payloads can be exported or shared as QR images using [`betCertQR.ts`](../src/betCertQR.ts), which provides helpers for generating data URLs and parsing scanned strings.
+- The [`BetCertScanner`](../src/components/BetCertScanner.tsx) component reads Bet Cert QRs. It prefers the native `BarcodeDetector` API (Chrome ≥83, Edge ≥83, Opera ≥70, Android WebView ≥88) and falls back to [`jsQR`](https://github.com/cozmo/jsQR) via a canvas capture when the API is unavailable (Safari, Firefox, older Chromium).
+
 ## Renewal
 - **Purpose:** Allow Player to continue reopening a locked bet beyond initial short TTL.
 - **Mechanism:** Player presents expired Cert (QR or stored payload) to House; House verifies ledger state and issues a fresh Cert with an updated `exp` while keeping the original `certId` and `bankRef`.
