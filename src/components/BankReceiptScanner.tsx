@@ -1,13 +1,15 @@
 import React from 'react'
 import jsQR from 'jsqr'
 import { parseBankReceipt } from '../bankReceiptQR'
+import { verifyBankReceipt } from '../certs/bankReceipt'
 import type { BankReceipt } from '../certs/bankReceipt'
 
 interface BankReceiptScannerProps {
   onReceipt: (receipt: BankReceipt) => void
+  housePublicKey: CryptoKey
 }
 
-export default function BankReceiptScanner({ onReceipt }: BankReceiptScannerProps) {
+export default function BankReceiptScanner({ onReceipt, housePublicKey }: BankReceiptScannerProps) {
   const videoRef = React.useRef<HTMLVideoElement>(null)
   const streamRef = React.useRef<MediaStream | null>(null)
   const detectorRef = React.useRef<any>(null)
@@ -77,9 +79,14 @@ export default function BankReceiptScanner({ onReceipt }: BankReceiptScannerProp
     requestAnimationFrame(scan)
   }
 
-  const handlePayload = (raw: string) => {
+  const handlePayload = async (raw: string) => {
     try {
       const receipt = parseBankReceipt(raw)
+      const valid = await verifyBankReceipt(receipt, housePublicKey)
+      if (!valid) {
+        setError('Invalid Bank Receipt')
+        return
+      }
       onReceipt(receipt)
       streamRef.current?.getTracks().forEach(t => t.stop())
     } catch (e) {
