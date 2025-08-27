@@ -1,3 +1,5 @@
+import { bytesToBase64Url, base64UrlToBytes } from '../utils/base64'
+
 const subtle = globalThis.crypto.subtle
 const encoder = new TextEncoder()
 
@@ -20,12 +22,12 @@ export interface BankReceipt extends BankReceiptPayload {
 async function signPayload(payload: BankReceiptPayload, key: CryptoKey): Promise<string> {
   const data = encoder.encode(JSON.stringify(payload))
   const sig = await subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, data)
-  return Buffer.from(sig).toString('base64url')
+  return bytesToBase64Url(new Uint8Array(sig))
 }
 
 async function verifyPayload(payload: BankReceiptPayload, sig: string, key: CryptoKey): Promise<boolean> {
   const data = encoder.encode(JSON.stringify(payload))
-  const signature = Buffer.from(sig, 'base64url')
+  const signature = base64UrlToBytes(sig) as Uint8Array<ArrayBuffer>
   return subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, signature, data)
 }
 
