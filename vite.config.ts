@@ -1,11 +1,13 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 export default defineConfig({
   base: '/roll-et/',
   plugins: [
     react(),
+    nodePolyfills(),
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
@@ -51,5 +53,11 @@ export default defineConfig({
         ]
       },
     })
-  ]
+  ],
+  resolve: {
+    alias: {
+      crypto: 'crypto-browserify',
+      stream: 'stream-browserify'
+    }
+  }
 });
