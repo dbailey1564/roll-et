@@ -16,7 +16,10 @@ function uuid(): string {
 async function hashBets(bets: Bet[]): Promise<string> {
   const data = encoder.encode(JSON.stringify(bets))
   const hashBuf = await subtle.digest('SHA-256', data)
-  return Buffer.from(hashBuf).toString('hex')
+  const bytes = new Uint8Array(hashBuf)
+  return Array.from(bytes)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
 }
 
 export async function lockRound(players: Player[], houseKey: CryptoKey, roundId: string): Promise<BetCert[]> {
