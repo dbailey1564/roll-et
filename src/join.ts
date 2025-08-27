@@ -1,6 +1,6 @@
 import { HouseCert, validateHouseCert } from './certs/houseCert'
 import QRCode from 'qrcode'
-import { bytesToBase64Url } from './utils/base64'
+import { bytesToBase64Url, base64UrlToBytes } from './utils/base64'
 
 const subtle = globalThis.crypto.subtle
 const encoder = new TextEncoder()
@@ -58,4 +58,30 @@ export async function createJoinResponse(
   const sigBuf = await subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, playerKey, encoder.encode(JSON.stringify(payload)))
   const sig = bytesToBase64Url(new Uint8Array(sigBuf))
   return { ...payload, sig }
+}
+
+export async function verifyJoinResponse(
+  response: JoinResponse,
+  challenge: JoinChallenge,
+  secret: CryptoKey,
+  playerKey: CryptoKey
+): Promise<boolean> {
+  if (response.round !== challenge.round) return false
+  if (response.nonce !== challenge.nonce) return false
+
+  const data = encoder.encode(`${response.player}|${challenge.round}|${challenge.nonce}`)
+  const hmacBytes = base64UrlToBytes(response.hmac) as Uint8Array<ArrayBuffer>
+  const hmacOk = await subtle.verify('HMAC', secret, hmacBytes, data)
+  if (!hmacOk) return false
+
+  const payload = {
+    player: response.player,
+    round: response.round,
+    nonce: response.nonce,
+    hmac: response.hmac,
+    bankRef: response.bankRef
+  }
+  const sigBytes = base64UrlToBytes(response.sig) as Uint8Array<ArrayBuffer>
+  const payloadData = encoder.encode(JSON.stringify(payload))
+  return subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, playerKey, sigBytes, payloadData)
 }
