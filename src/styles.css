@@ -72,7 +72,7 @@ body{
 .seat{ font-weight: 600; }
 
 .actions{ display:flex; gap:8px; align-items:center; flex-wrap: wrap; }
-.actions button{ padding: 8px 10px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: var(--text); }
+.actions button:not(.link-btn){ padding: 8px 10px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: var(--text); }
 .actions .manual-roll{ display:flex; gap:6px; align-items:center; margin-left:auto; }
 .actions .manual-roll input{ width: 120px; padding: 6px 8px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: var(--text); }
 
