@@ -32,7 +32,7 @@ body{
 .header .left{ justify-self: start; }
 .header .right{ justify-self: end; display:flex; gap:12px; align-items:center; }
 .link-btn{
-  padding: 6px 10px; border-radius: 999px; border: 1px solid #334155; background: #0f172a; color: var(--text); text-decoration: none;
+  padding: 6px 10px; border-radius: 999px; border: 1px solid #334155; background: #0f172a; color: var(--text); font-size: 1rem; text-decoration: none;
 }
 .install-btn{
   padding: 6px 10px; border-radius: 999px; border: 1px solid #334155; background: #0f172a; color: var(--text);
@@ -78,13 +78,7 @@ body{
 
 /* Landing: ensure HOST aligns right and JOIN/HOST match */
 .actions .host-btn{ margin-left: auto; }
-button.link-btn{
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid #334155;
-  background: #0f172a;
-  color: var(--text);
-}
+button.link-btn{ appearance: none; -webkit-appearance: none; }
 
 .table-wrap{ background: var(--panel); padding: 12px; border-radius: 12px; margin: 12px 0; }
 
