@@ -30,7 +30,7 @@ export default function Landing() {
       <section className="controls">
         <div className="actions">
           <button className="link-btn" onClick={handleJoinClick}>Join</button>
-          <Link className="link-btn" to="/house">Host</Link>
+          <Link className="link-btn host-btn" to="/house">Host</Link>
         </div>
       </section>
 

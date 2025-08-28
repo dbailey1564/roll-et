@@ -76,6 +76,16 @@ body{
 .actions .manual-roll{ display:flex; gap:6px; align-items:center; margin-left:auto; }
 .actions .manual-roll input{ width: 120px; padding: 6px 8px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: var(--text); }
 
+/* Landing: ensure HOST aligns right and JOIN/HOST match */
+.actions .host-btn{ margin-left: auto; }
+button.link-btn{
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: var(--text);
+}
+
 .table-wrap{ background: var(--panel); padding: 12px; border-radius: 12px; margin: 12px 0; }
 
 .betmodes{
