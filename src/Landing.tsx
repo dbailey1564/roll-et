@@ -1,5 +1,10 @@
 import React from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import { HouseCert, validateHouseCert } from './certs/houseCert'
+import {
+  houseCertRootPublicKeyJwk,
+  isAuthorizedHouseCert,
+} from './certs/authorizedHouseCertLedger'
 import './styles.css'
 
 export default function Landing() {
@@ -19,6 +24,30 @@ export default function Landing() {
     navigate('/player')
   }
 
+  const handleHostClick = async () => {
+    const stored = localStorage.getItem('houseCert')
+    if (!stored) {
+      navigate('/purchase-house-cert')
+      return
+    }
+
+    try {
+      const cert: HouseCert = JSON.parse(stored)
+      const rootKey = await globalThis.crypto.subtle.importKey(
+        'jwk',
+        houseCertRootPublicKeyJwk,
+        { name: 'ECDSA', namedCurve: 'P-256' },
+        true,
+        ['verify']
+      )
+      const valid = await validateHouseCert(cert, rootKey)
+      const authorized = isAuthorizedHouseCert(cert)
+      navigate(valid && authorized ? '/house' : '/purchase-house-cert')
+    } catch (e) {
+      navigate('/purchase-house-cert')
+    }
+  }
+
   return (
     <div className="container">
       <header className="header">
@@ -30,7 +59,7 @@ export default function Landing() {
       <section className="controls">
         <div className="actions">
           <button className="link-btn" onClick={handleJoinClick}>Join</button>
-          <Link className="link-btn host-btn" to="/house">Host</Link>
+          <button className="link-btn host-btn" onClick={handleHostClick}>Host</button>
         </div>
       </section>
 
