@@ -1,5 +1,6 @@
 import React from 'react'
 import type { Player, RoundState } from '../types'
+import { MAX_SEATS } from '../config'
 import type { BankReceipt } from '../certs/bankReceipt'
 
 export const PER_ROUND_POOL = 8
@@ -44,8 +45,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addPlayer = React.useCallback((name: string) => {
     setPlayers(prev => {
-      if (prev.length >= 4) return prev
-      const seat = [1, 2, 3, 4].find(i => !prev.some(p => p.id === i))
+      if (prev.length >= MAX_SEATS) return prev
+      const seat = Array.from({ length: MAX_SEATS }, (_, i) => i + 1).find(i => !prev.some(p => p.id === i))
       if (!seat) return prev
       const newPlayer: Player = { id: seat, name, bets: [], pool: PER_ROUND_POOL, bank: 0 }
       return [...prev, newPlayer].sort((a, b) => a.id - b.id)

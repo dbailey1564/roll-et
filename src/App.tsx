@@ -36,6 +36,13 @@ export default function App() {
 
   const { canInstall, install, installed, isiOS } = useInstallPrompt()
 
+  const [activeId, setActiveId] = React.useState<number | null>(players[0]?.id ?? null)
+  React.useEffect(() => {
+    if (activeId != null && players.some(p => p.id === activeId)) return
+    if (players.length > 0) setActiveId(players[0].id)
+    else setActiveId(null)
+  }, [players])
+
   if (players.length === 0) {
     return (
       <div className="container">
@@ -58,7 +65,7 @@ export default function App() {
     )
   }
 
-  const active = players[0]
+  const active = players.find(p => p.id === activeId) || players[0]
   const totalStake = (p: Player) => p.bets.reduce((a,b)=>a+b.amount, 0)
   const maxForActive = Math.max(MIN_BET, active.pool)
   const canPlace = (p: Player) => roundState==='open' && amount>=MIN_BET && amount<=p.pool
@@ -219,6 +226,21 @@ export default function App() {
       {isiOS && !installed && (
         <div className="ios-hint">On iPhone/iPad: Share → Add to Home Screen to install.</div>
       )}
+
+      {/* Seat selector */}
+      <section className="controls">
+        <div className="betmodes">
+          {players.map(p => (
+            <button
+              key={p.id}
+              className={active?.id === p.id ? 'active' : ''}
+              onClick={() => setActiveId(p.id)}
+            >
+              Seat {p.id}: {p.name}
+            </button>
+          ))}
+        </div>
+      </section>
 
       <BetControls
         amount={amount}

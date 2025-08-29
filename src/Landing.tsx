@@ -7,9 +7,11 @@ import {
   isAuthorizedHouseCert,
 } from './certs/authorizedHouseCertLedger'
 import './styles.css'
+import { useHouse } from './context/GameContext'
 
 export default function Landing() {
   const navigate = useNavigate()
+  const { houseKey } = useHouse()
 
   const handleJoinClick = async () => {
     if (!localStorage.getItem('cameraGranted')) {
@@ -44,7 +46,7 @@ export default function Landing() {
       const valid = await validateHouseCert(cert, rootKey)
       const authorized = isAuthorizedHouseCert(cert)
       if (valid && authorized) {
-        const result = await syncWithAuthority(cert)
+        const result = await syncWithAuthority(cert, houseKey?.privateKey || null)
         if (!result.ok) {
           alert('Online sync required to host: ' + result.error)
           return

@@ -9,6 +9,9 @@ import BetCertScanner from './components/BetCertScanner'
 import BankReceiptScanner from './components/BankReceiptScanner'
 import type { BetCert } from './certs/betCert'
 import type { BankReceipt } from './certs/bankReceipt'
+import JoinScanner from './components/JoinScanner'
+import { houseCertRootPublicKeyJwk } from './certs/authorizedHouseCertLedger'
+import { joinResponseToQR } from './joinQR'
 
 function describeBet(b: Bet): string {
   switch (b.type) {
@@ -38,8 +41,13 @@ export default function Player() {
   const { canInstall, install, installed } = useInstallPrompt()
   const [scanningCert, setScanningCert] = React.useState(false)
   const [scanningReceipt, setScanningReceipt] = React.useState(false)
+  const [joining, setJoining] = React.useState(false)
   const [lastCert, setLastCert] = React.useState<BetCert | null>(null)
   const [lastReceipt, setLastReceipt] = React.useState<BankReceipt | null>(null)
+  const [joinQR, setJoinQR] = React.useState<string | null>(null)
+  const [playerKeys, setPlayerKeys] = React.useState<CryptoKeyPair | null>(null)
+  const [playerSecret, setPlayerSecret] = React.useState<CryptoKey | null>(null)
+  const [rootKey, setRootKey] = React.useState<CryptoKey | null>(null)
   const [housePublicKey, setHousePublicKey] = React.useState<CryptoKey | null>(null)
 
   React.useEffect(() => {
@@ -51,6 +59,24 @@ export default function Player() {
         ['sign', 'verify']
       )
       setHousePublicKey((pair as CryptoKeyPair).publicKey)
+      // Player keys and secret for Join
+      const pkeys = await crypto.subtle.generateKey(
+        { name: 'ECDSA', namedCurve: 'P-256' },
+        true,
+        ['sign', 'verify']
+      )
+      const secret = await crypto.subtle.generateKey({ name: 'HMAC', hash: 'SHA-256' }, true, ['sign'])
+      setPlayerKeys(pkeys as CryptoKeyPair)
+      setPlayerSecret(secret)
+      // Root authority key (public) for validating HouseCerts in Join challenges
+      const rk = await crypto.subtle.importKey(
+        'jwk',
+        houseCertRootPublicKeyJwk,
+        { name: 'ECDSA', namedCurve: 'P-256' },
+        true,
+        ['verify']
+      )
+      setRootKey(rk)
     })()
   }, [])
 
@@ -63,6 +89,7 @@ export default function Player() {
       </header>
 
       <section className="controls">
+        <button onClick={() => setJoining(true)}>Join Table</button>
         <button onClick={() => setScanningCert(true)}>Scan Bet Cert</button>
         <button onClick={() => setScanningReceipt(true)}>Scan Bank Receipt</button>
       </section>
@@ -142,3 +169,25 @@ export default function Player() {
   )
 }
 
+      {joining && playerKeys && playerSecret && rootKey && (
+        <section className="bets">
+          <JoinScanner
+            playerId="p-local"
+            playerKey={playerKeys.privateKey}
+            playerSecret={playerSecret}
+            rootKey={rootKey}
+            onResponse={async (resp) => {
+              const img = await joinResponseToQR(resp)
+              setJoinQR(img)
+              setJoining(false)
+            }}
+          />
+        </section>
+      )}
+
+      {joinQR && (
+        <section className="bets">
+          <h3>Your Join Response</h3>
+          <img src={joinQR} alt="join response" />
+        </section>
+      )}

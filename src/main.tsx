@@ -6,6 +6,7 @@ import Player from './Player'
 import House from './House'
 import Stats from './Stats'
 import Landing from './Landing'
+import PurchaseHouseCert from './PurchaseHouseCert'
 import { GameProvider } from './context/GameContext'
 import './styles.css'
 
@@ -18,6 +19,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Route path="/game" element={<App />} />
           <Route path="/player" element={<Player />} />
           <Route path="/house" element={<House />} />
+          <Route path="/purchase-house-cert" element={<PurchaseHouseCert />} />
           <Route path="/stats" element={<Stats />} />
         </Routes>
       </BrowserRouter>
