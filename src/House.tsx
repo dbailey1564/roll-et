@@ -4,6 +4,7 @@ import { usePlayers, useRoundState, useStats, PER_ROUND_POOL, useHouse } from '.
 import { fmtUSDSign } from './utils'
 import { useInstallPrompt } from './pwa/useInstallPrompt'
 import { lockRound } from './round'
+import { appendLedger } from './ledger/localLedger'
 import { issueHouseCert, HouseCert } from './certs/houseCert'
 import { createJoinChallenge, joinChallengeToQR } from './join'
 import { betCertToQR } from './betCertQR'
@@ -46,7 +47,9 @@ export default function House() {
   const lock = async () => {
     if (!houseKey) return
     setRoundState('locked')
-    const certs = await lockRound(players, houseKey.privateKey, String(stats.rounds + 1))
+    const roundId = String(stats.rounds + 1)
+    await appendLedger('round_locked', roundId, { players: players.map(p => ({ id: p.id, stake: p.bets.reduce((a,b)=>a+b.amount,0) })) })
+    const certs = await lockRound(players, houseKey.privateKey, roundId)
     const qrs = await Promise.all(
       certs.map(async c => ({ player: c.player, qr: await betCertToQR(c) }))
     )
@@ -55,6 +58,9 @@ export default function House() {
       acc[Number(c.player)] = c.certId
       return acc
     }, {}))
+    for (const c of certs) {
+      await appendLedger('bet_cert_issued', roundId, { player: c.player, certId: c.certId, betHash: c.betHash, exp: c.exp })
+    }
   }
 
   const makeJoinQR = async () => {

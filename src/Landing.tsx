@@ -1,6 +1,7 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { HouseCert, validateHouseCert } from './certs/houseCert'
+import { syncWithAuthority } from './ledger/sync'
 import {
   houseCertRootPublicKeyJwk,
   isAuthorizedHouseCert,
@@ -42,7 +43,16 @@ export default function Landing() {
       )
       const valid = await validateHouseCert(cert, rootKey)
       const authorized = isAuthorizedHouseCert(cert)
-      navigate(valid && authorized ? '/house' : '/purchase-house-cert')
+      if (valid && authorized) {
+        const result = await syncWithAuthority(cert)
+        if (!result.ok) {
+          alert('Online sync required to host: ' + result.error)
+          return
+        }
+        navigate('/house')
+      } else {
+        navigate('/purchase-house-cert')
+      }
     } catch (e) {
       navigate('/purchase-house-cert')
     }

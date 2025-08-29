@@ -10,6 +10,7 @@ import { clampInt, fmtUSD, fmtUSDSign } from './utils'
 import { useBetActions } from './hooks/useBetActions'
 import { usePlayers, useRoundState, useStats, PER_ROUND_POOL, useHouse } from './context/GameContext'
 import { issueReceiptsForWinners } from './receipts'
+import { appendLedger } from './ledger/localLedger'
 
 const MIN_BET = 1
 
@@ -166,9 +167,13 @@ export default function App() {
       const roundId = String(stats.rounds + 1)
       const recs = await issueReceiptsForWinners(winners, roundId, houseKey.privateKey)
       setReceipts(recs)
+      for (const w of winners) {
+        await appendLedger('receipt_issued', roundId, { player: String(w.player), value: w.value, betCertRef: w.betCertRef })
+      }
     }
 
     setPlayers(nextPlayers)
+    await appendLedger('round_settled', String(stats.rounds + 1), { roll, deltas })
     setHistory(h => [{ roll, deltas, time: Date.now() }, ...h].slice(0, 30))
     setWinning(roll)
     setRoundState('settled')
