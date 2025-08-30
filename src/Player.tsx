@@ -11,6 +11,7 @@ import type { BetCert } from './certs/betCert'
 import type { BankReceipt } from './certs/bankReceipt'
 import JoinScanner from './components/JoinScanner'
 import { houseCertRootPublicKeyJwk } from './certs/authorizedHouseCertLedger'
+import { validateHouseCert } from './certs/houseCert'
 import { joinResponseToQR } from './joinQR'
 import { pairingToQR } from './pairingQR'
 import { generateJoinTotp } from './utils/totp'
@@ -66,13 +67,6 @@ export default function Player() {
 
   React.useEffect(() => {
     ;(async () => {
-      // TODO: Replace with real house public key from join flow
-      const pair = await crypto.subtle.generateKey(
-        { name: 'ECDSA', namedCurve: 'P-256' },
-        true,
-        ['sign', 'verify']
-      )
-      setHousePublicKey((pair as CryptoKeyPair).publicKey)
       // Player keys and secret for Join
       const pkeys = await crypto.subtle.generateKey(
         { name: 'ECDSA', namedCurve: 'P-256' },
@@ -158,12 +152,22 @@ export default function Player() {
               setJoinQR(img)
               setJoining(false)
             }}
-            onResponseEx={async (resp, challenge) => {
-              if (!playerSecret) return
-              const raw = await crypto.subtle.exportKey('raw', playerSecret)
-              const code = await generateJoinTotp(new Uint8Array(raw), resp.round, resp.nonce, challenge.nbf, 60_000)
-              setJoinTotp(code)
-            }}
+              onResponseEx={async (resp, challenge) => {
+                if (!playerSecret || !rootKey) return
+                const valid = await validateHouseCert(challenge.houseCert, rootKey)
+                if (!valid) return
+                const key = await crypto.subtle.importKey(
+                  'jwk',
+                  challenge.houseCert.payload.publicKeyJwk,
+                  { name: 'ECDSA', namedCurve: 'P-256' },
+                  true,
+                  ['verify']
+                )
+                setHousePublicKey(key)
+                const raw = await crypto.subtle.exportKey('raw', playerSecret)
+                const code = await generateJoinTotp(new Uint8Array(raw), resp.round, resp.nonce, challenge.nbf, 60_000)
+                setJoinTotp(code)
+              }}
           />
         </section>
       )}
