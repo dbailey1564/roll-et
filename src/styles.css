@@ -29,6 +29,7 @@ body{
   margin-bottom: 8px;
 }
 .header h1{ margin: 0; font-size: 28px; text-align: center; }
+.header h1 a{ text-decoration: none; color: inherit; }
 .header .left{ justify-self: start; }
 .header .right{ justify-self: end; display:flex; gap:12px; align-items:center; }
 .link-btn{
