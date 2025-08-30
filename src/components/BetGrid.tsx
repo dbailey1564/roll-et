@@ -3,7 +3,7 @@ import React from 'react'
 interface Props {
   grid: number[][]
   mode: string
-  splitFirst?: number
+  splitFirst?: number | false
   onCellClick: (n: number) => void
   covered: Set<number>
   winning?: number | null

@@ -90,9 +90,9 @@ export default function App() {
 
       <BetBoard
         grid={numberGrid}
-        mode={(mode as any).kind}
+        mode={mode.kind}
         onCellClick={onCellClick}
-        splitFirst={(mode as any).kind === 'split' ? (mode as any).first : undefined}
+        splitFirst={mode.kind === 'split' && mode.first}
         covered={covered}
         winning={winning}
       />
