@@ -3,60 +3,43 @@ import { BetBoard } from './components/BetBoard'
 import { BetControls } from './components/BetControls'
 import { HistorySection } from './components/HistorySection'
 import { FooterBar } from './components/FooterBar'
-import { Bet, makeCornerFromAnchor, resolveRound, numberGrid, getOdds } from './game/engine'
+import { HeaderBar } from './components/HeaderBar'
+import { numberGrid, getOdds } from './game/engine'
 import { useInstallPrompt } from './pwa/useInstallPrompt'
-import type { BetMode, Player } from './types'
-import { clampInt, fmtUSD, fmtUSDSign } from './utils'
-import { useBetActions } from './hooks/useBetActions'
-import { usePlayers, useRoundState, useStats, PER_ROUND_POOL, useHouse } from './context/GameContext'
-import { issueReceiptsForWinners } from './receipts'
-import { appendLedger } from './ledger/localLedger'
-
-const MIN_BET = 1
+import { fmtUSD, fmtUSDSign } from './utils'
+import { useBetting, MIN_BET } from './hooks/useBetting'
 
 export default function App() {
-  const { players, setPlayers } = usePlayers()
-  const { roundState, setRoundState } = useRoundState()
-  const { stats, setStats } = useStats()
-  const { houseKey, betCerts, setBetCerts, setReceipts } = useHouse()
-
-  const DEFAULT_BET = 1
-  const [amount, setAmount] = React.useState<number>(() => {
-    const saved = localStorage.getItem('bet')
-    const n = saved ? Number(saved) : DEFAULT_BET
-    return Number.isFinite(n) ? clampInt(n, MIN_BET, PER_ROUND_POOL) : DEFAULT_BET
-  })
-  React.useEffect(()=>{ localStorage.setItem('bet', String(amount)) }, [amount])
-
-  const [mode, setMode] = React.useState<BetMode>({ kind: 'single' })
-
-  const [enteredRoll, setEnteredRoll] = React.useState<number | ''>('')
-  const [history, setHistory] = React.useState<Array<{ roll: number, deltas: Record<number, number>, time: number }>>([])
-  const [winning, setWinning] = React.useState<number | null>(null)
-
   const { canInstall, install, installed, isiOS } = useInstallPrompt()
-
-  const [activeId, setActiveId] = React.useState<number | null>(players[0]?.id ?? null)
-  React.useEffect(() => {
-    if (activeId != null && players.some(p => p.id === activeId)) return
-    if (players.length > 0) setActiveId(players[0].id)
-    else setActiveId(null)
-  }, [players])
+  const {
+    players,
+    roundState,
+    amount,
+    setAmount,
+    mode,
+    setMode,
+    enteredRoll,
+    setEnteredRoll,
+    history,
+    winning,
+    covered,
+    active,
+    setActiveId,
+    maxForActive,
+    undoLast,
+    clearBets,
+    onCellClick,
+    lockRound,
+    settleRound,
+    newRound,
+    describeBet,
+    potential,
+  } = useBetting()
 
   if (players.length === 0) {
     return (
       <div className="container">
-        <header className="header">
-          <div className="left">
-            <span className="seat">Seat: Open</span>
-          </div>
-          <h1>Roll-et</h1>
-          <div className="right">
-            <div className="credits">
-              Round: <span className={`roundstate ${roundState}`}>{roundState.toUpperCase()}</span>
-            </div>
-          </div>
-        </header>
+        <HeaderBar roundState={roundState} />
         <section className="bets">
           <div className="muted">No players joined.</div>
         </section>
@@ -65,178 +48,14 @@ export default function App() {
     )
   }
 
-  const active = players.find(p => p.id === activeId) || players[0]
-  const totalStake = (p: Player) => p.bets.reduce((a,b)=>a+b.amount, 0)
-  const maxForActive = Math.max(MIN_BET, active.pool)
-  const canPlace = (p: Player) => roundState==='open' && amount>=MIN_BET && amount<=p.pool
-
-  React.useEffect(() => {
-    setAmount(a => clampInt(a, MIN_BET, maxForActive))
-  }, [active.pool])
-
-  const covered = React.useMemo(() => {
-    const s = new Set<number>()
-    for(const p of players){
-      for(const b of p.bets){
-        switch(b.type){
-          case 'single': case 'split': case 'corner':
-            b.selection.forEach(n => s.add(n)); break
-          case 'even':
-            for(let n=2;n<=20;n+=2) s.add(n); break
-          case 'odd':
-            for(let n=1;n<=19;n+=2) s.add(n); break
-          case 'high':
-            for(let n=11;n<=20;n++) s.add(n); break
-          case 'low':
-            for(let n=1;n<=10;n++) s.add(n); break
-        }
-      }
-    }
-    return s
-  }, [players])
-
-  const { addBetFor, undoLast, clearBets } = useBetActions({
-    roundState,
-    setPlayers,
-    mode,
-    setMode,
-    perRoundPool: PER_ROUND_POOL,
-  })
-
-  const onCellClick = (n: number) => {
-    if(roundState!=='open') return
-    const p = active
-    if(!canPlace(p)) return
-    switch(mode.kind){
-      case 'single':
-        addBetFor(p.id, { type: 'single', selection: [n], amount })
-        break
-      case 'split': {
-        const first = (mode as any).first as number | undefined
-        if(first == null){
-          setMode({ kind: 'split', first: n })
-        } else {
-          if(!isAdjacent(first,n)){ setMode({ kind: 'split' }); return }
-          const pair = [first, n].sort((a,b)=>a-b)
-          addBetFor(p.id, { type:'split', selection: pair, amount })
-          setMode({ kind: 'split' })
-        }
-        break
-      }
-      case 'corner': {
-        const q = makeCornerFromAnchor(n)
-        if(q) addBetFor(p.id, { type:'corner', selection: q, amount })
-        break
-      }
-      case 'high':
-        addBetFor(p.id, { type:'high', selection: [], amount })
-        break
-      case 'low':
-        addBetFor(p.id, { type:'low', selection: [], amount })
-        break
-      case 'even':
-        addBetFor(p.id, { type:'even', selection: [], amount })
-        break
-      case 'odd':
-        addBetFor(p.id, { type:'odd', selection: [], amount })
-        break
-    }
-  }
-
-  const lockRound = () => { setRoundState('locked') }
-
-  const settleRound = async () => {
-    if(roundState!=='locked') return
-    const roll = Number(enteredRoll)
-    if(!Number.isInteger(roll) || roll<1 || roll>20) return
-
-    const deltas: Record<number, number> = {}
-    const nextPlayers = players.map(p => {
-      const stake = totalStake(p)
-      const win = resolveRound(roll, p.bets)
-      const delta = win - stake
-      deltas[p.id] = delta
-      return { ...p, bank: p.bank + delta }
-    })
-
-    setStats(prev => {
-      const hits = [...prev.hits]
-      hits[roll] = (hits[roll] || 0) + 1
-      const banks = { ...prev.banks }
-      nextPlayers.forEach(p => { banks[p.id] = p.bank })
-      return { rounds: prev.rounds + 1, hits, banks }
-    })
-
-    if (houseKey) {
-      const winners = players
-        .filter(p => deltas[p.id] > 0)
-        .map(p => ({ player: p.id, value: deltas[p.id], betCertRef: betCerts[p.id] || '' }))
-      const roundId = String(stats.rounds + 1)
-      const recs = await issueReceiptsForWinners(winners, roundId, houseKey.privateKey)
-      setReceipts(recs)
-      // Include spendCode in ledger payload locally for lookup convenience
-      for (let i = 0; i < winners.length; i++) {
-        const w = winners[i]
-        const rec = (recs[i] && recs[i].receipt) ? recs[i] : undefined
-        await appendLedger('receipt_issued', roundId, {
-          player: String(w.player),
-          value: w.value,
-          betCertRef: w.betCertRef,
-          receiptId: rec?.receipt.receiptId,
-          spendCode: rec?.spendCode,
-        })
-      }
-    }
-
-    setPlayers(nextPlayers)
-    await appendLedger('round_settled', String(stats.rounds + 1), { roll, deltas })
-    setHistory(h => [{ roll, deltas, time: Date.now() }, ...h].slice(0, 30))
-    setWinning(roll)
-    setRoundState('settled')
-  }
-
-  const newRound = () => {
-    setPlayers(prev => prev.map(p => ({ ...p, pool: PER_ROUND_POOL, bets: [] })))
-    setEnteredRoll('')
-    setWinning(null)
-    setRoundState('open')
-    setBetCerts({})
-    setReceipts([])
-  }
-
-  const describeBet = (b: Bet) => {
-    switch(b.type){
-      case 'single': return `#${b.selection[0]}`
-      case 'split': return `Split ${b.selection.join(' / ')}`
-      case 'corner': return `Corner ${b.selection.join('-')}`
-      case 'even': return 'Even'
-      case 'odd': return 'Odd'
-      case 'high': return 'High 11–20'
-      case 'low': return 'Low 1–10'
-    }
-  }
-
-  const potential = (b: Bet) => b.amount * getOdds(b.type)
-
   return (
     <div className="container">
-      <header className="header">
-        <div className="left">
-          <span className="seat">Seat: Open</span>
-        </div>
-        <h1>Roll-et</h1>
-        <div className="right">
-          <div className="credits">
-            Round: <span className={`roundstate ${roundState}`}>{roundState.toUpperCase()}</span>
-          </div>
-        </div>
-      </header>
+      <HeaderBar roundState={roundState} />
 
       {isiOS && !installed && (
         <div className="ios-hint">On iPhone/iPad: Share → Add to Home Screen to install.</div>
       )}
 
-      {/* Seat selector */}
       <section className="controls">
         <div className="betmodes">
           {players.map(p => (
@@ -273,14 +92,16 @@ export default function App() {
         grid={numberGrid}
         mode={(mode as any).kind}
         onCellClick={onCellClick}
-        splitFirst={(mode as any).kind==='split' ? (mode as any).first : undefined}
+        splitFirst={(mode as any).kind === 'split' ? (mode as any).first : undefined}
         covered={covered}
         winning={winning}
       />
 
       <section className="bets">
         <h3>Bets (potential payout)</h3>
-        {active.bets.length===0 ? <div className="muted">No bets placed.</div> : (
+        {active.bets.length === 0 ? (
+          <div className="muted">No bets placed.</div>
+        ) : (
           <ul>
             {active.bets.map(b => (
               <li key={b.id}>
@@ -299,14 +120,4 @@ export default function App() {
       <FooterBar canInstall={canInstall} install={install} installed={installed} />
     </div>
   )
-}
-
-function isAdjacent(a:number,b:number): boolean {
-  const pos = (n:number) => {
-    const idx = n-1
-    return { r: Math.floor(idx/5), c: idx%5 }
-  }
-  const A = pos(a), B = pos(b)
-  const dr = Math.abs(A.r-B.r), dc = Math.abs(A.c-B.c)
-  return (dr+dc===1)
 }
