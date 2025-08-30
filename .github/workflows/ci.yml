@@ -25,10 +25,16 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install dependencies (with fallback)
+      - name: Install dependencies (Linux clean install)
+        if: runner.os == 'Linux'
         shell: bash
         run: |
-          npm ci || (rm -rf node_modules package-lock.json && npm i)
+          rm -rf node_modules package-lock.json
+          npm install
+
+      - name: Install dependencies (non-Linux)
+        if: runner.os != 'Linux'
+        run: npm ci
 
       - name: Run unit tests
         run: npm test -- --run
@@ -51,10 +57,16 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install dependencies (with fallback)
+      - name: Install dependencies (Linux clean install)
+        if: runner.os == 'Linux'
         shell: bash
         run: |
-          npm ci || (rm -rf node_modules package-lock.json && npm i)
+          rm -rf node_modules package-lock.json
+          npm install
+
+      - name: Install dependencies (non-Linux)
+        if: runner.os != 'Linux'
+        run: npm ci
 
       - name: Generate Mermaid SVG
         run: npm run docs:flow
