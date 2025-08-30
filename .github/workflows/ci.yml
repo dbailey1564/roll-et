@@ -38,9 +38,13 @@ jobs:
 
       - name: Run unit tests
         run: npm test -- --run
+        env:
+          ROLLUP_SKIP_NODEJS_NATIVE: '1'
 
       - name: Build
         run: npm run build
+        env:
+          ROLLUP_SKIP_NODEJS_NATIVE: '1'
 
   diagrams:
     runs-on: ubuntu-latest
