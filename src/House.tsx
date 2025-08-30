@@ -6,10 +6,12 @@ import { useInstallPrompt } from './pwa/useInstallPrompt'
 import { lockRound } from './round'
 import { appendLedger } from './ledger/localLedger'
 import type { HouseCert } from './certs/houseCert'
-import { createJoinChallenge, joinChallengeToQR } from './join'
+import { createJoinChallenge, joinChallengeToQR, type JoinChallenge } from './join'
 import { betCertToQR } from './betCertQR'
 import { MAX_SEATS } from './config'
 import JoinResponseScanner from './components/JoinResponseScanner'
+import BankReceiptScanner from './components/BankReceiptScanner'
+import { verifyBankReceipt } from './certs/bankReceipt'
 
 export default function House() {
   const { players, setPlayers } = usePlayers()
@@ -22,6 +24,9 @@ export default function House() {
   const [betCertQRs, setBetCertQRs] = React.useState<Array<{ player: string; qr: string }>>([])
   const [newPlayerName, setNewPlayerName] = React.useState('')
   const [scanningJoinResp, setScanningJoinResp] = React.useState(false)
+  const [scanningSpend, setScanningSpend] = React.useState(false)
+  const [lastChallenge, setLastChallenge] = React.useState<JoinChallenge | null>(null)
+  const [keyMismatch, setKeyMismatch] = React.useState(false)
 
   React.useEffect(() => {
     try {
@@ -29,6 +34,19 @@ export default function House() {
       if (raw) setHouseCert(JSON.parse(raw) as HouseCert)
     } catch {}
   }, [])
+
+  // Enforce that houseKey public key matches HouseCert publicKeyJwk
+  React.useEffect(() => {
+    (async () => {
+      if (!houseKey || !houseCert) { setKeyMismatch(false); return }
+      try {
+        const jwk = await crypto.subtle.exportKey('jwk', houseKey.publicKey)
+        const a = JSON.stringify({ kty: jwk.kty, crv: (jwk as any).crv, x: (jwk as any).x, y: (jwk as any).y })
+        const b = JSON.stringify({ kty: houseCert.payload.publicKeyJwk.kty, crv: (houseCert.payload.publicKeyJwk as any).crv, x: (houseCert.payload.publicKeyJwk as any).x, y: (houseCert.payload.publicKeyJwk as any).y })
+        setKeyMismatch(a !== b)
+      } catch { setKeyMismatch(true) }
+    })()
+  }, [houseKey, houseCert])
 
   const newRound = () => {
     setPlayers(prev => prev.map(p => ({ ...p, pool: PER_ROUND_POOL, bets: [] })))
@@ -39,6 +57,7 @@ export default function House() {
 
   const lock = async () => {
     if (!houseKey) return
+    if (keyMismatch) { alert('House signing key does not match House Certificate public key. Cannot lock.'); return }
     setRoundState('locked')
     const roundId = String(stats.rounds + 1)
     await appendLedger('round_locked', roundId, { seatCount: players.length, maxSeats: MAX_SEATS, players: players.map(p => ({ id: p.id, stake: p.bets.reduce((a,b)=>a+b.amount,0) })) })
@@ -61,6 +80,7 @@ export default function House() {
     const challenge = await createJoinChallenge(houseCert, String(stats.rounds + 1))
     const qr = await joinChallengeToQR(challenge)
     setJoinQR(qr)
+    setLastChallenge(challenge)
   }
 
   const addSeat = async () => {
@@ -100,7 +120,11 @@ export default function House() {
             <button onClick={newRound}>New Round</button>
             <button onClick={makeJoinQR}>Join QR</button>
             <button onClick={() => setScanningJoinResp(true)}>Scan Join Response</button>
+            <button onClick={() => setScanningSpend(true)}>Spend Receipt</button>
           </div>
+          {keyMismatch && (
+            <div className="error" role="alert">Signing key does not match House Certificate. Lock/settle disabled.</div>
+          )}
           <div className="add-seat">
             <input
               type="text"
@@ -125,6 +149,11 @@ export default function House() {
         <section className="bets">
           <JoinResponseScanner onResponse={async (resp) => {
             // Minimal admission: assign next available seat and log
+            if (!lastChallenge || resp.round !== lastChallenge.round || resp.nonce !== lastChallenge.nonce) {
+              alert('Join response does not match current challenge.')
+              setScanningJoinResp(false)
+              return
+            }
             const occupied = new Set(players.map(p => p.id))
             const seat = Array.from({ length: MAX_SEATS }, (_, i) => i + 1).find(n => !occupied.has(n))
             if (seat) {
@@ -133,6 +162,28 @@ export default function House() {
             }
             setScanningJoinResp(false)
           }} />
+        </section>
+      )}
+
+      {scanningSpend && houseKey && (
+        <section className="bets">
+          <BankReceiptScanner
+            housePublicKey={houseKey.publicKey}
+            onReceipt={async (receipt) => {
+              const ok = await verifyBankReceipt(receipt, houseKey.publicKey)
+              if (!ok) { alert('Invalid or expired receipt'); setScanningSpend(false); return }
+              await appendLedger('receipt_spent', String(stats.rounds + 1), { receiptId: receipt.receiptId, player: receipt.player, value: receipt.value })
+              try {
+                const key = 'roll_et_spent_receipts'
+                const raw = localStorage.getItem(key)
+                const set = new Set<string>(raw ? JSON.parse(raw) as string[] : [])
+                set.add(receipt.receiptId)
+                localStorage.setItem(key, JSON.stringify(Array.from(set)))
+              } catch {}
+              alert('Receipt marked as spent.')
+              setScanningSpend(false)
+            }}
+          />
         </section>
       )}
 
