@@ -11,7 +11,14 @@ interface JoinScannerProps {
   onResponseEx?: (resp: JoinResponse, challenge: ReturnType<typeof parseJoinChallenge>) => void
 }
 
-export default function JoinScanner({ playerId, playerKey, playerSecret, rootKey, onResponse }: JoinScannerProps) {
+export default function JoinScanner({
+  playerId,
+  playerKey,
+  playerSecret,
+  rootKey,
+  onResponse,
+  onResponseEx
+}: JoinScannerProps) {
   const videoRef = React.useRef<HTMLVideoElement>(null)
   const streamRef = React.useRef<MediaStream | null>(null)
   const detectorRef = React.useRef<any>(null)
