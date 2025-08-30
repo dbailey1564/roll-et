@@ -1,6 +1,20 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { appendLedger, getLedger, getUnsyncedEntries, markSynced } from '../ledger/localLedger'
 
+const store: Record<string, string> = {}
+const localStorageMock = {
+  getItem(key: string) {
+    return Object.prototype.hasOwnProperty.call(store, key) ? store[key] : null
+  },
+  setItem(key: string, value: string) {
+    store[key] = value
+  },
+  removeItem(key: string) {
+    delete store[key]
+  },
+}
+;(globalThis as any).localStorage = localStorageMock
+
 describe('local ledger', () => {
   beforeEach(() => {
     localStorage.removeItem('roll_et_ledger_v1')
