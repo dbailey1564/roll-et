@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --port 5173",
     "test": "vitest --environment jsdom",
-    "test:node": "vitest run --environment node src/__tests__/*.test.ts",
+    "test:node": "bash -lc 'shopt -s globstar; vitest run --environment node src/__tests__/**/*.test.{ts,tsx}'",
     "docs:flow": "mmdc -p docs/puppeteer.config.json -i docs/flowchart.mmd -o docs/flowchart.svg",
     "docs:flow:png": "mmdc -p docs/puppeteer.config.json -i docs/flowchart.mmd -o docs/flowchart.png",
     "lint": "eslint . --ext .ts,.tsx --config .eslintrc",
