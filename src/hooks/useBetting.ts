@@ -1,5 +1,6 @@
 import React from 'react'
-import { Bet, makeCornerFromAnchor, resolveRound, getOdds } from '../game/engine'
+import { Bet, makeCornerFromAnchor, resolveRound } from '../game/engine'
+import { describeBet, potential } from '../utils/betHelpers'
 import { usePlayers, useRoundState, useStats, PER_ROUND_POOL, useHouse } from '../context/GameContext'
 import type { BetMode, Player } from '../types'
 import { clampInt } from '../utils'
@@ -174,20 +175,6 @@ export function useBetting() {
     setBetCerts({})
     setReceipts([])
   }
-
-  const describeBet = (b: Bet) => {
-    switch (b.type) {
-      case 'single': return `#${b.selection[0]}`
-      case 'split': return `Split ${b.selection.join(' / ')}`
-      case 'corner': return `Corner ${b.selection.join('-')}`
-      case 'even': return 'Even'
-      case 'odd': return 'Odd'
-      case 'high': return 'High 11–20'
-      case 'low': return 'Low 1–10'
-    }
-  }
-
-  const potential = (b: Bet) => b.amount * getOdds(b.type)
 
   return {
     players,
