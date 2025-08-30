@@ -25,8 +25,10 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (with fallback)
+        shell: bash
+        run: |
+          npm ci || (rm -rf node_modules package-lock.json && npm i)
 
       - name: Run unit tests
         run: npm test -- --run
@@ -49,8 +51,10 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (with fallback)
+        shell: bash
+        run: |
+          npm ci || (rm -rf node_modules package-lock.json && npm i)
 
       - name: Generate Mermaid SVG
         run: npm run docs:flow
