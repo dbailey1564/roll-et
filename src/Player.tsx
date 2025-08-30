@@ -118,6 +118,29 @@ export default function Player() {
         </section>
       )}
 
+      {joining && playerKeys && playerSecret && rootKey && (
+        <section className="bets">
+          <JoinScanner
+            playerId="p-local"
+            playerKey={playerKeys.privateKey}
+            playerSecret={playerSecret}
+            rootKey={rootKey}
+            onResponse={async (resp) => {
+              const img = await joinResponseToQR(resp)
+              setJoinQR(img)
+              setJoining(false)
+            }}
+          />
+        </section>
+      )}
+
+      {joinQR && (
+        <section className="bets">
+          <h3>Your Join Response</h3>
+          <img src={joinQR} alt="join response" />
+        </section>
+      )}
+
       {lastCert && (
         <section className="bets">
           <h3>Last Bet Cert</h3>
@@ -168,26 +191,3 @@ export default function Player() {
     </div>
   )
 }
-
-      {joining && playerKeys && playerSecret && rootKey && (
-        <section className="bets">
-          <JoinScanner
-            playerId="p-local"
-            playerKey={playerKeys.privateKey}
-            playerSecret={playerSecret}
-            rootKey={rootKey}
-            onResponse={async (resp) => {
-              const img = await joinResponseToQR(resp)
-              setJoinQR(img)
-              setJoining(false)
-            }}
-          />
-        </section>
-      )}
-
-      {joinQR && (
-        <section className="bets">
-          <h3>Your Join Response</h3>
-          <img src={joinQR} alt="join response" />
-        </section>
-      )}

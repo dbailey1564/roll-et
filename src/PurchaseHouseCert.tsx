@@ -58,7 +58,7 @@ export default function PurchaseHouseCert() {
         <textarea
           value={text}
           onChange={e => setText(e.target.value)}
-          placeholder="{ \"payload\": { ... }, \"signature\": \"...\" }"
+          placeholder='{ "payload": { ... }, "signature": "..." }'
           rows={12}
           style={{ width: '100%' }}
         />
@@ -72,4 +72,3 @@ export default function PurchaseHouseCert() {
     </div>
   )
 }
-
