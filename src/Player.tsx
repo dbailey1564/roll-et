@@ -2,8 +2,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { usePlayers } from './context/GameContext'
 import { fmtUSD, fmtUSDSign } from './utils'
-import { getOdds } from './game/engine'
-import type { Bet } from './game/engine'
+import { describeBet, potential } from './utils/betHelpers'
 import { useInstallPrompt } from './pwa/useInstallPrompt'
 import BetCertScanner from './components/BetCertScanner'
 import BankReceiptScanner from './components/BankReceiptScanner'
@@ -13,29 +12,6 @@ import JoinScanner from './components/JoinScanner'
 import { useJoin } from './hooks/useJoin'
 import BetCertDisplay from './components/player/BetCertDisplay'
 import BankReceiptDisplay from './components/player/BankReceiptDisplay'
-
-function describeBet(b: Bet): string {
-  switch (b.type) {
-    case 'single':
-      return `#${b.selection[0]}`
-    case 'split':
-      return `Split ${b.selection.join(' / ')}`
-    case 'corner':
-      return `Corner ${b.selection.join('-')}`
-    case 'even':
-      return 'Even'
-    case 'odd':
-      return 'Odd'
-    case 'high':
-      return 'High 11–20'
-    case 'low':
-      return 'Low 1–10'
-  }
-}
-
-function potential(b: Bet): number {
-  return b.amount * getOdds(b.type)
-}
 
 export default function Player() {
   const { players } = usePlayers()
