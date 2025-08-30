@@ -10,7 +10,9 @@
     "test": "vitest --environment jsdom",
     "test:node": "vitest run --environment node src/__tests__/*.test.ts",
     "docs:flow": "mmdc -p docs/puppeteer.config.json -i docs/flowchart.mmd -o docs/flowchart.svg",
-    "docs:flow:png": "mmdc -p docs/puppeteer.config.json -i docs/flowchart.mmd -o docs/flowchart.png"
+    "docs:flow:png": "mmdc -p docs/puppeteer.config.json -i docs/flowchart.mmd -o docs/flowchart.png",
+    "lint": "eslint . --ext .ts,.tsx --config .eslintrc",
+    "format": "prettier . --write"
   },
   "dependencies": {
     "jsqr": "^1.4.0",
@@ -29,9 +31,13 @@
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@types/testing-library__jest-dom": "^5.14.9",
+    "@typescript-eslint/eslint-plugin": "^8.41.0",
+    "@typescript-eslint/parser": "^8.41.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "eslint": "^9.34.0",
     "jimp": "^0.22.10",
     "jsdom": "^26.1.0",
+    "prettier": "^3.6.2",
     "typescript": "^5.5.4",
     "vite": "^5.4.2",
     "vite-plugin-node-polyfills": "^0.24.0",
