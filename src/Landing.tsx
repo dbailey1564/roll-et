@@ -1,5 +1,5 @@
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { HouseCert, validateHouseCert } from './certs/houseCert'
 import { syncWithAuthority } from './ledger/sync'
 import {
@@ -64,7 +64,9 @@ export default function Landing() {
     <div className="container">
       <header className="header">
         <div className="left" />
-        <h1>Roll-et</h1>
+        <h1>
+          <Link to="/">Roll-et</Link>
+        </h1>
         <div className="right" />
       </header>
 

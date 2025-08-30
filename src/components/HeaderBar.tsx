@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import type { RoundState } from '../types'
 
 interface Props {
@@ -11,7 +12,9 @@ export function HeaderBar({ roundState }: Props) {
       <div className="left">
         <span className="seat">Seat: Open</span>
       </div>
-      <h1>Roll-et</h1>
+      <h1>
+        <Link to="/">Roll-et</Link>
+      </h1>
       <div className="right">
         <div className="credits">
           Round: <span className={`roundstate ${roundState}`}>{roundState.toUpperCase()}</span>
