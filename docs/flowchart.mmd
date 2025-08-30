@@ -8,7 +8,7 @@ flowchart TD
   Purchase --> A
 
   subgraph House_Table
-    H --> Seats[Add Seat (local or via JoinResponse)]
+    H --> Seats[Add Seat - local or via JoinResponse]
     Seats -->|admission entry| L1[(Local Ledger)]
 
     H --> JQR[Create Join Challenge QR]
@@ -18,7 +18,7 @@ flowchart TD
       PJ --> JoinClick[Join Table]
       JoinClick --> GenKeys[Gen player keys + HMAC]
       GenKeys --> ScanJ[Scan Join Challenge]
-      ScanJ --> PJResp[Compute JoinResponse (HMAC+Sig)]
+      ScanJ --> PJResp[Compute JoinResponse - HMAC + Sig]
       PJResp --> PJShow[Show JoinResponse QR]:::optional
     end
 
@@ -38,11 +38,10 @@ flowchart TD
     Settle -->|round_settled + receipt_issued| L3[(Local Ledger)]
   end
 
-  H --> SyncHost[Sync on Host selection (only online moment)]
+  H --> SyncHost[Sync on Host selection - only online moment]
   L1 --> L2 --> L3 --> SyncHost
   SyncHost --> Challenge[Authority /sync/challenge]:::cloud
   Challenge --> Commit[Authority /sync]:::cloud
 
   classDef cloud fill:#eef,stroke:#88f
   classDef optional fill:#ffd,stroke:#cc9
-

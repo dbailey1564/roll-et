@@ -9,8 +9,8 @@
     "preview": "vite preview --port 5173",
     "test": "vitest --environment jsdom",
     "test:node": "vitest run --environment node src/__tests__/*.test.ts",
-    "docs:flow": "mmdc -i docs/flowchart.mmd -o docs/flowchart.svg",
-    "docs:flow:png": "mmdc -i docs/flowchart.mmd -o docs/flowchart.png"
+    "docs:flow": "mmdc -p docs/puppeteer.config.json -i docs/flowchart.mmd -o docs/flowchart.svg",
+    "docs:flow:png": "mmdc -p docs/puppeteer.config.json -i docs/flowchart.mmd -o docs/flowchart.png"
   },
   "dependencies": {
     "jsqr": "^1.4.0",
