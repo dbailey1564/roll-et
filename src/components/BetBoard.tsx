@@ -6,7 +6,7 @@ interface Props {
   grid: number[][]
   mode: BetMode['kind']
   onCellClick: (n: number) => void
-  splitFirst?: number
+  splitFirst?: number | false
   covered: Set<number>
   winning: number | null
 }
