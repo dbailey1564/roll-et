@@ -1,17 +1,12 @@
 import React from 'react'
 import jsQR from 'jsqr'
-import { parseJoinChallenge, validateJoinChallenge, createJoinResponse, JoinResponse } from '../join'
+import type { PairingPayload } from '../pairingQR'
 
-interface JoinScannerProps {
-  playerId: string
-  playerKey: CryptoKey
-  playerSecret: CryptoKey
-  rootKey: CryptoKey
-  onResponse: (resp: JoinResponse) => void
-  onResponseEx?: (resp: JoinResponse, challenge: ReturnType<typeof parseJoinChallenge>) => void
+interface Props {
+  onPair: (payload: PairingPayload) => void
 }
 
-export default function JoinScanner({ playerId, playerKey, playerSecret, rootKey, onResponse }: JoinScannerProps) {
+export default function PairingScanner({ onPair }: Props) {
   const videoRef = React.useRef<HTMLVideoElement>(null)
   const streamRef = React.useRef<MediaStream | null>(null)
   const detectorRef = React.useRef<any>(null)
@@ -42,27 +37,15 @@ export default function JoinScanner({ playerId, playerKey, playerSecret, rootKey
   }, [])
 
   const scan = async () => {
-    if (!videoRef.current) {
-      requestAnimationFrame(scan)
-      return
-    }
+    if (!videoRef.current) { requestAnimationFrame(scan); return }
     if ('BarcodeDetector' in window) {
       try {
-        if (!detectorRef.current) {
-          detectorRef.current = new (window as any).BarcodeDetector({ formats: ['qr_code'] })
-        }
+        if (!detectorRef.current) detectorRef.current = new (window as any).BarcodeDetector({ formats: ['qr_code'] })
         const codes = await detectorRef.current.detect(videoRef.current)
-        if (codes.length > 0) {
-          handlePayload(codes[0].rawValue)
-          return
-        }
-      } catch (err) {
-        console.error(err)
-      }
+        if (codes.length > 0) { handlePayload(codes[0].rawValue); return }
+      } catch (err) { console.error(err) }
     } else {
-      if (!canvasRef.current) {
-        canvasRef.current = document.createElement('canvas')
-      }
+      if (!canvasRef.current) canvasRef.current = document.createElement('canvas')
       const canvas = canvasRef.current
       const video = videoRef.current
       const ctx = canvas.getContext('2d')
@@ -72,28 +55,20 @@ export default function JoinScanner({ playerId, playerKey, playerSecret, rootKey
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
         const code = jsQR(imageData.data, canvas.width, canvas.height)
-        if (code) {
-          handlePayload(code.data)
-          return
-        }
+        if (code) { handlePayload(code.data); return }
       }
     }
     requestAnimationFrame(scan)
   }
 
-  const handlePayload = async (raw: string) => {
+  const handlePayload = (raw: string) => {
     try {
-      const challenge = parseJoinChallenge(raw)
-      const ok = await validateJoinChallenge(challenge, rootKey)
-      if (!ok) {
-        setError('Invalid join challenge')
+      const payload = JSON.parse(raw) as PairingPayload
+      if (payload?.type !== 'pairing' || !payload.playerId || !payload.secret) {
+        setError('Invalid pairing payload')
         return
       }
-      const resp = await createJoinResponse(playerId, challenge, playerSecret, playerKey)
-      onResponse(resp)
-      if (typeof (onResponseEx) === 'function') {
-        (onResponseEx as any)(resp, challenge)
-      }
+      onPair(payload)
       streamRef.current?.getTracks().forEach(t => t.stop())
     } catch (e) {
       setError('Scan failed')
@@ -107,3 +82,4 @@ export default function JoinScanner({ playerId, playerKey, playerSecret, rootKey
     </div>
   )
 }
+

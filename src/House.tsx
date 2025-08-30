@@ -12,6 +12,9 @@ import { MAX_SEATS } from './config'
 import JoinResponseScanner from './components/JoinResponseScanner'
 import BankReceiptScanner from './components/BankReceiptScanner'
 import { verifyBankReceipt } from './certs/bankReceipt'
+import PairingScanner from './components/PairingScanner'
+import { base64UrlToBytes } from './utils/base64'
+import { verifyJoinTotp } from './utils/totp'
 
 export default function House() {
   const { players, setPlayers } = usePlayers()
@@ -25,8 +28,11 @@ export default function House() {
   const [newPlayerName, setNewPlayerName] = React.useState('')
   const [scanningJoinResp, setScanningJoinResp] = React.useState(false)
   const [scanningSpend, setScanningSpend] = React.useState(false)
+  const [spendCodeInput, setSpendCodeInput] = React.useState('')
   const [lastChallenge, setLastChallenge] = React.useState<JoinChallenge | null>(null)
   const [keyMismatch, setKeyMismatch] = React.useState(false)
+  const [scanningPair, setScanningPair] = React.useState(false)
+  const [totpInput, setTotpInput] = React.useState('')
 
   React.useEffect(() => {
     try {
@@ -121,6 +127,63 @@ export default function House() {
             <button onClick={makeJoinQR}>Join QR</button>
             <button onClick={() => setScanningJoinResp(true)}>Scan Join Response</button>
             <button onClick={() => setScanningSpend(true)}>Spend Receipt</button>
+            <button onClick={() => setScanningPair(true)}>Scan Pairing</button>
+          </div>
+          <div className="manual-roll">
+            <input
+              type="text"
+              placeholder="Spend code (10 digits)"
+              value={spendCodeInput}
+              onChange={e => setSpendCodeInput(e.target.value.replace(/\D/g, '').slice(0, 10))}
+            />
+            <button onClick={async () => {
+              const code = spendCodeInput
+              if (code.length < 10) return
+              const rec = receipts.find(r => r.spendCode && r.spendCode === code)
+              if (!rec) { alert('Receipt not found for code.'); return }
+              const ok = await verifyBankReceipt(rec.receipt, houseKey!.publicKey)
+              if (!ok) { alert('Invalid or expired receipt'); return }
+              const spentKey = 'roll_et_spent_receipts'
+              try {
+                const raw = localStorage.getItem(spentKey)
+                const set = new Set<string>(raw ? JSON.parse(raw) as string[] : [])
+                if (set.has(rec.receipt.receiptId)) { alert('Receipt already spent.'); return }
+                await appendLedger('receipt_spent', String(stats.rounds + 1), { receiptId: rec.receipt.receiptId, player: rec.player, value: rec.receipt.value, method: 'code' })
+                set.add(rec.receipt.receiptId)
+                localStorage.setItem(spentKey, JSON.stringify(Array.from(set)))
+                alert('Receipt marked as spent.')
+                setSpendCodeInput('')
+              } catch { alert('Failed to record spend.'); }
+            }}>Spend by code</button>
+          </div>
+          <div className="manual-roll">
+            <input
+              type="text"
+              placeholder="Join TOTP (6 digits)"
+              value={totpInput}
+              onChange={e => setTotpInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              disabled={!lastChallenge}
+            />
+            <button onClick={async () => {
+              if (!totpInput || !lastChallenge) return
+              try {
+                const raw = localStorage.getItem('roll_et_pair_secrets')
+                const map = raw ? (JSON.parse(raw) as Record<string, string>) : {}
+                let matched: string | null = null
+                for (const [pid, b64] of Object.entries(map)) {
+                  const ok = await verifyJoinTotp(totpInput, base64UrlToBytes(b64) as Uint8Array, lastChallenge.round, lastChallenge.nonce, lastChallenge.nbf, 60_000, 1)
+                  if (ok) { matched = pid; break }
+                }
+                if (!matched) { alert('No matching pairing secret for TOTP.'); return }
+                const occupied = new Set(players.map(p => p.id))
+                const seat = Array.from({ length: MAX_SEATS }, (_, i) => i + 1).find(n => !occupied.has(n))
+                if (seat) {
+                  setPlayers(prev => [...prev, { id: seat, name: matched!, bets: [], pool: PER_ROUND_POOL, bank: 0 }].sort((a,b)=>a.id-b.id))
+                  await appendLedger('admission', String(stats.rounds + 1), { seat, player: matched!, round: lastChallenge.round, method: 'totp' })
+                  setTotpInput('')
+                }
+              } catch { alert('Admission by TOTP failed.') }
+            }}>Admit by code</button>
           </div>
           {keyMismatch && (
             <div className="error" role="alert">Signing key does not match House Certificate. Lock/settle disabled.</div>
@@ -165,6 +228,21 @@ export default function House() {
         </section>
       )}
 
+      {scanningPair && (
+        <section className="bets">
+          <PairingScanner onPair={async (p) => {
+            try {
+              const raw = localStorage.getItem('roll_et_pair_secrets')
+              const map = raw ? (JSON.parse(raw) as Record<string, string>) : {}
+              map[p.playerId] = p.secret
+              localStorage.setItem('roll_et_pair_secrets', JSON.stringify(map))
+              alert(`Paired with ${p.playerId}`)
+            } catch {}
+            setScanningPair(false)
+          }} />
+        </section>
+      )}
+
       {scanningSpend && houseKey && (
         <section className="bets">
           <BankReceiptScanner
@@ -190,30 +268,39 @@ export default function House() {
       {betCertQRs.length > 0 && (
         <section className="bets">
           <h3>Bet Certs</h3>
-          {betCertQRs.map(b => (
-            <div key={b.player}>
-              <div>Player {b.player}</div>
-              <img src={b.qr} alt={`bet cert ${b.player}`} />
-            </div>
-          ))}
+          {betCertQRs.map(b => {
+            const seatId = Number(b.player)
+            const label = players.find(p => p.id === seatId)?.name
+            return (
+              <div key={b.player}>
+                <div>{label ? `${label} (Seat ${seatId})` : `Seat ${seatId}`}</div>
+                <img src={b.qr} alt={`bet cert ${b.player}`} />
+              </div>
+            )
+          })}
         </section>
       )}
 
       {receipts.length > 0 && (
         <section className="bets">
           <h3>Bank Receipts</h3>
-          {receipts.map(r => (
-            <div key={r.player}>
-              <div>Player {r.player}</div>
-              <img src={r.qr} alt={`receipt ${r.player}`} />
-              <a
-                href={`data:application/json,${encodeURIComponent(JSON.stringify(r.receipt))}`}
-                download={`receipt-${r.player}.json`}
-              >
-                Download
-              </a>
-            </div>
-          ))}
+          {receipts.map(r => {
+            const seatId = Number(r.player)
+            const label = players.find(p => p.id === seatId)?.name
+            return (
+              <div key={r.player}>
+                <div>{label ? `${label} (Seat ${seatId})` : `Seat ${seatId}`}</div>
+                <img src={r.qr} alt={`receipt ${r.player}`} />
+                {r.spendCode && <div>Spend code: <strong>{r.spendCode}</strong></div>}
+                <a
+                  href={`data:application/json,${encodeURIComponent(JSON.stringify(r.receipt))}`}
+                  download={`receipt-${r.player}.json`}
+                >
+                  Download
+                </a>
+              </div>
+            )
+          })}
         </section>
       )}
 

@@ -1,6 +1,7 @@
 import { issueBankReceipt } from './certs/bankReceipt'
 import { bankReceiptToQR } from './bankReceiptQR'
 import type { ReceiptRecord } from './context/GameContext'
+import { computeReceiptSpendCode } from './utils/spendCode'
 
 function uuid(): string {
   const c = globalThis.crypto as Crypto | undefined;
@@ -33,7 +34,8 @@ export async function issueReceiptsForWinners(
       betCertRef: w.betCertRef,
     }, key)
     const qr = await bankReceiptToQR(receipt)
-    receipts.push({ player: String(w.player), receipt, qr })
+    const spendCode = await computeReceiptSpendCode(receipt)
+    receipts.push({ player: String(w.player), receipt, qr, spendCode })
   }
   return receipts
 }

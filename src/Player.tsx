@@ -12,6 +12,8 @@ import type { BankReceipt } from './certs/bankReceipt'
 import JoinScanner from './components/JoinScanner'
 import { houseCertRootPublicKeyJwk } from './certs/authorizedHouseCertLedger'
 import { joinResponseToQR } from './joinQR'
+import { pairingToQR } from './pairingQR'
+import { generateJoinTotp } from './utils/totp'
 
 function describeBet(b: Bet): string {
   switch (b.type) {
@@ -49,6 +51,18 @@ export default function Player() {
   const [playerSecret, setPlayerSecret] = React.useState<CryptoKey | null>(null)
   const [rootKey, setRootKey] = React.useState<CryptoKey | null>(null)
   const [housePublicKey, setHousePublicKey] = React.useState<CryptoKey | null>(null)
+  const [pairQR, setPairQR] = React.useState<string | null>(null)
+  const [joinTotp, setJoinTotp] = React.useState<string | null>(null)
+  const [playerId, setPlayerId] = React.useState<string>(() => {
+    try {
+      return localStorage.getItem('roll_et_player_id') || 'Player'
+    } catch {
+      return 'Player'
+    }
+  })
+  React.useEffect(() => {
+    try { localStorage.setItem('roll_et_player_id', playerId) } catch {}
+  }, [playerId])
 
   React.useEffect(() => {
     ;(async () => {
@@ -89,6 +103,20 @@ export default function Player() {
       </header>
 
       <section className="controls">
+        <div className="amount">
+          <input
+            type="text"
+            placeholder="Your name"
+            value={playerId}
+            onChange={e => {
+              const raw = e.target.value
+              // Allow A-Z, a-z, 0-9, dot, dash, underscore. No spaces. Max 16 chars.
+              const sanitized = raw.replace(/[^A-Za-z0-9._-]/g, '').slice(0, 16)
+              setPlayerId(sanitized)
+            }}
+          />
+          <small>Allowed: A-Z a-z 0-9 . _ - (max 16)</small>
+        </div>
         <button onClick={() => setJoining(true)}>Join Table</button>
         <button onClick={() => setScanningCert(true)}>Scan Bet Cert</button>
         <button onClick={() => setScanningReceipt(true)}>Scan Bank Receipt</button>
@@ -121,7 +149,7 @@ export default function Player() {
       {joining && playerKeys && playerSecret && rootKey && (
         <section className="bets">
           <JoinScanner
-            playerId="p-local"
+            playerId={playerId || 'Player'}
             playerKey={playerKeys.privateKey}
             playerSecret={playerSecret}
             rootKey={rootKey}
@@ -129,6 +157,12 @@ export default function Player() {
               const img = await joinResponseToQR(resp)
               setJoinQR(img)
               setJoining(false)
+            }}
+            onResponseEx={async (resp, challenge) => {
+              if (!playerSecret) return
+              const raw = await crypto.subtle.exportKey('raw', playerSecret)
+              const code = await generateJoinTotp(new Uint8Array(raw), resp.round, resp.nonce, challenge.nbf, 60_000)
+              setJoinTotp(code)
             }}
           />
         </section>
@@ -138,6 +172,23 @@ export default function Player() {
         <section className="bets">
           <h3>Your Join Response</h3>
           <img src={joinQR} alt="join response" />
+          {joinTotp && <div>TOTP (60s): <strong>{joinTotp}</strong></div>}
+        </section>
+      )}
+
+      <section className="controls">
+        <button onClick={async () => {
+          if (!playerSecret) return
+          const raw = await crypto.subtle.exportKey('raw', playerSecret)
+          const qr = await pairingToQR(playerId || 'Player', new Uint8Array(raw))
+          setPairQR(qr)
+        }}>Show Pairing Code</button>
+      </section>
+
+      {pairQR && (
+        <section className="bets">
+          <h3>Pairing QR</h3>
+          <img src={pairQR} alt="pairing" />
         </section>
       )}
 

@@ -174,8 +174,17 @@ export default function App() {
       const roundId = String(stats.rounds + 1)
       const recs = await issueReceiptsForWinners(winners, roundId, houseKey.privateKey)
       setReceipts(recs)
-      for (const w of winners) {
-        await appendLedger('receipt_issued', roundId, { player: String(w.player), value: w.value, betCertRef: w.betCertRef })
+      // Include spendCode in ledger payload locally for lookup convenience
+      for (let i = 0; i < winners.length; i++) {
+        const w = winners[i]
+        const rec = (recs[i] && recs[i].receipt) ? recs[i] : undefined
+        await appendLedger('receipt_issued', roundId, {
+          player: String(w.player),
+          value: w.value,
+          betCertRef: w.betCertRef,
+          receiptId: rec?.receipt.receiptId,
+          spendCode: rec?.spendCode,
+        })
       }
     }
 

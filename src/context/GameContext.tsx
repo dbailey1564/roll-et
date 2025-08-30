@@ -11,7 +11,7 @@ export type Stats = {
   banks: Record<number, number>
 }
 
-export type ReceiptRecord = { player: string; receipt: BankReceipt; qr: string }
+export type ReceiptRecord = { player: string; receipt: BankReceipt; qr: string; spendCode?: string }
 
 type GameContextValue = {
   players: Player[]
