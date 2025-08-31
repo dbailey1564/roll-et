@@ -14,8 +14,23 @@ export default defineConfig({
          cleanupOutdatedCaches: true,
          clientsClaim: true,
          skipWaiting: true,
-         navigateFallback: '/roll-et/offline.html',
+         navigateFallback: '/roll-et/index.html',
          runtimeCaching: [
+           {
+             urlPattern: ({ request }) => request.mode === 'navigate',
+             handler: 'NetworkFirst',
+             options: {
+               cacheName: 'page-cache',
+               networkTimeoutSeconds: 10,
+               plugins: [
+                 {
+                   handlerDidError: async () => {
+                     return caches.match('/roll-et/offline.html');
+                   },
+                 },
+               ],
+            },
+          },
            {
              urlPattern: ({ url }) => url.pathname.startsWith('/api'),
              method: 'GET',
