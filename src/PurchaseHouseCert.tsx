@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { HouseCert } from './certs/houseCert'
 import { houseCertRootPublicKeyJwk, isAuthorizedHouseCert } from './certs/authorizedHouseCertLedger'
 import { validateHouseCert } from './certs/houseCert'
+import { pemToJson } from './utils/pem'
 
 export default function PurchaseHouseCert() {
   const [text, setText] = React.useState('')
@@ -27,10 +28,10 @@ export default function PurchaseHouseCert() {
     }
   }
 
-  const onImport = async () => {
+  const onImport = async (input: string = text) => {
     setError(null)
     try {
-      const cert = JSON.parse(text) as HouseCert
+      const cert = JSON.parse(input) as HouseCert
       const good = await validate(cert)
       if (!good) {
         setError('Certificate failed validation or is not authorized.')
@@ -43,6 +44,25 @@ export default function PurchaseHouseCert() {
       setError('Invalid JSON')
       setOk(false)
     }
+  }
+
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const raw = await file.text()
+    let content = raw
+    if (file.name.toLowerCase().endsWith('.pem')) {
+      try {
+        const cert = pemToJson<HouseCert>(raw)
+        content = JSON.stringify(cert)
+      } catch {
+        setError('Invalid PEM')
+        setOk(false)
+        return
+      }
+    }
+    setText(content)
+    await onImport(content)
   }
 
   return (
@@ -61,6 +81,12 @@ export default function PurchaseHouseCert() {
           placeholder='{ "payload": { ... }, "signature": "..." }'
           rows={12}
           style={{ width: '100%' }}
+        />
+        <input
+          type="file"
+          accept=".json,.pem"
+          onChange={onFile}
+          style={{ marginTop: 8 }}
         />
         <div style={{ marginTop: 8 }}>
           <button onClick={onImport}>Import Certificate</button>
