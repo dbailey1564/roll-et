@@ -28,7 +28,7 @@ export default function PurchaseHouseCert() {
     }
   }
 
-  const onImport = async (input: string = text) => {
+  const importCert = async (input: string) => {
     setError(null)
     try {
       const cert = JSON.parse(input) as HouseCert
@@ -44,6 +44,10 @@ export default function PurchaseHouseCert() {
       setError('Invalid JSON')
       setOk(false)
     }
+  }
+
+  const onImport = () => {
+    void importCert(text)
   }
 
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,7 +66,7 @@ export default function PurchaseHouseCert() {
       }
     }
     setText(content)
-    await onImport(content)
+    await importCert(content)
   }
 
   return (
