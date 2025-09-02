@@ -1,3 +1,5 @@
+// NOTE FOR CODEX: See AGENTS.md before making changes.
+// AGENTS.md is the authoritative manifest of agents, responsibilities, and workflow.
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
