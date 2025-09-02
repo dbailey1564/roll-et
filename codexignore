@@ -1,0 +1,28 @@
+# .codexignore — reduce noisy scans and prevent recursive ls
+node_modules/
+dist/
+build/
+.cache/
+.tmp/
+coverage/
+.vscode/
+.git/
+**/*.map
+**/*.log
+**/*.lock
+**/.DS_Store
+
+# Generated assets and screenshots
+public/assets/generated/
+screenshots/
+
+# Large data and exports
+exports/
+data/**
+
+# Tests can be noisy; keep if Codex must not traverse
+# tests/
+
+# Example: ignore experimental sandboxes
+sandbox/
+playground/

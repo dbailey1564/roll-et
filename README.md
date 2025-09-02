@@ -38,3 +38,6 @@ npm run preview
 ## Notes
 - Start URL and scope are `/roll-et/`.
 - Service worker and manifest are generated at build time by the PWA plugin.
+
+## Agents
+See [AGENTS.md](./AGENTS.md) for full architecture and workflow.
