@@ -11,10 +11,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-test:
+  ci:
+    name: build • test • diagrams
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      CI: true
+      ROLLUP_SKIP_NODEJS_NATIVE: '1'
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,64 +29,40 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: package-lock.json
 
-      - name: Install dependencies (Linux clean install)
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          rm -rf node_modules package-lock.json
-          npm install
-
-      - name: Install dependencies (non-Linux)
-        if: runner.os != 'Linux'
+      - name: Install (lockfile)
         run: npm ci
 
-      - name: Run unit tests
+      - name: Test
         run: npm test -- --run
-        env:
-          ROLLUP_SKIP_NODEJS_NATIVE: '1'
 
       - name: Build
         run: npm run build
-        env:
-          ROLLUP_SKIP_NODEJS_NATIVE: '1'
 
-  diagrams:
-    runs-on: ubuntu-latest
-    needs: build-and-test
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies (Linux clean install)
-        if: runner.os == 'Linux'
-        shell: bash
+      - name: Generate Mermaid SVG (soft-skip if missing)
         run: |
-          rm -rf node_modules package-lock.json
-          npm install
+          if npm pkg get scripts.docs:flow | grep -qv null; then
+            npm run docs:flow
+          else
+            echo "Skipping docs:flow (script not found)"
+          fi
 
-      - name: Install dependencies (non-Linux)
-        if: runner.os != 'Linux'
-        run: npm ci
-
-      - name: Generate Mermaid SVG
-        run: npm run docs:flow
-
-      - name: Generate Mermaid PNG
-        run: npm run docs:flow:png
+      - name: Generate Mermaid PNG (soft-skip if missing)
+        run: |
+          if npm pkg get scripts.docs:flow:png | grep -qv null; then
+            npm run docs:flow:png
+          else
+            echo "Skipping docs:flow:png (script not found)"
+          fi
 
       - name: Upload diagrams artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: flow-diagrams
           path: |
             docs/flowchart.svg
             docs/flowchart.png
+          retention-days: 7
+
