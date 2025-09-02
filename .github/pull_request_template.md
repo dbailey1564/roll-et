@@ -5,7 +5,7 @@
 - Key files and decisions (paths + 1-line rationale)
 
 ## Tests
-- [ ] Ran: `npm test -- --run --environment jsdom`
+- [ ] Ran: `npm test -- --run`
 - Paste Vitest summary here.
 
 ## Checklist

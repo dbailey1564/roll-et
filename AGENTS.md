@@ -24,7 +24,7 @@ Authoritative instructions for Codex Cloud when working on **dbailey1564/roll-et
 ## Commands (single source of truth)
 - **Install:** `npm ci`
 - **Build:** `npm run build`
-- **Test:** `npm test -- --run --environment jsdom`
+- **Test:** `npm test -- --run`
 - **Lint:** `npm run lint`
 - **Format:** `npm run format`
 Codex must prefer these commands for verification & fixes.
@@ -45,12 +45,12 @@ Codex must prefer these commands for verification & fixes.
 2. **Sync & verify**
    - `npm ci`
    - `npm run build`
-   - `npm test -- --run --environment jsdom`
+   - `npm test -- --run`
 3. **Implement**
    - Make minimal, coherent change set; update/add tests.
 4. **Validate**
    - `npm run build`
-   - `npm test -- --run --environment jsdom`
+   - `npm test -- --run`
    - `npm run lint || true`
 5. **Commit & PR**
    - `git add .`
