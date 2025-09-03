@@ -20,6 +20,9 @@ pnpm-debug.log*
 .env
 .env.*.local
 
+# Secret storage
+.sec/
+
 # TypeScript cache
 *.tsbuildinfo
 
