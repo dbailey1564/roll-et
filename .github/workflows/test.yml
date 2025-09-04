@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  jsdom:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -24,6 +24,21 @@ jobs:
 
       - name: Run jsdom tests
         run: npm test
+
+  node:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Run node tests
         run: npm run test:node
