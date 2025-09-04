@@ -23,8 +23,8 @@ npm run preview
 ## Deploy to GitHub Pages
 1. Create repo `roll-et` under `dbailey1564`.
 2. Push code.
-3. In the repo settings → Pages, set: Build and deployment = GitHub Actions.
-4. The included workflow publishes `/dist` to `gh-pages` branch.
+3. In the repo settings → Pages, enable GitHub Pages by setting **Build and deployment** to **GitHub Actions**. The deploy step will fail with a 404 if Pages isn't enabled.
+4. The included workflow builds `dist/` and publishes it using [`actions/deploy-pages`](https://github.com/actions/deploy-pages).
 5. Site URL: https://dbailey1564.github.io/roll-et/
 
 ## Documentation
