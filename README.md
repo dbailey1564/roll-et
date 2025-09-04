@@ -20,11 +20,19 @@ npm run build
 npm run preview
 ```
 
+## Configuration
+Roll‑et runs offline by default. To enable ledger sync:
+
+- Set `VITE_AUTH_URL` to the authority backend URL (e.g. in a `.env` file).
+- Replace the placeholder root key and ledger entries in [`src/certs/authorizedHouseCertLedger.ts`](src/certs/authorizedHouseCertLedger.ts).
+
+See [docs/README.md](docs/README.md#offline-first--sync-configuration) for full setup details.
+
 ## Deploy to GitHub Pages
 1. Create repo `roll-et` under `dbailey1564`.
 2. Push code.
-3. In the repo settings → Pages, set: Build and deployment = GitHub Actions.
-4. The included workflow publishes `/dist` to `gh-pages` branch.
+3. In the repo settings → Pages, enable GitHub Pages by setting **Build and deployment** to **GitHub Actions**. The deploy step will fail with a 404 if Pages isn't enabled.
+4. The included workflow builds `dist/` and publishes it using [`actions/deploy-pages`](https://github.com/actions/deploy-pages).
 5. Site URL: https://dbailey1564.github.io/roll-et/
 
 ## Documentation
