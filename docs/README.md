@@ -24,3 +24,11 @@ Roll‑et uses QRs to move join challenges, Bet Certs and BANK Receipts between 
 
 - [`betCertQR.ts`](../src/betCertQR.ts) & [`bankReceiptQR.ts`](../src/bankReceiptQR.ts) generate data URL images and parse payloads for Bet Certs and BANK Receipts.
 - Scanner components such as [`BetCertScanner`](../src/components/BetCertScanner.tsx) and [`BankReceiptScanner`](../src/components/BankReceiptScanner.tsx) attempt the browser `BarcodeDetector` API (Chrome ≥83, Edge ≥83, Opera ≥70, Android WebView ≥88) with a [`jsQR`](https://github.com/cozmo/jsQR) fallback for browsers lacking support.
+
+## Offline-first & Sync Configuration
+The PWA caches assets and app data so rounds can run without connectivity. Ledger entries queue locally until they are synchronized with the authority backend.
+
+1. **Authority URL:** set `VITE_AUTH_URL` to the backend base URL (e.g. via a `.env` file). If unset, `syncWithAuthority` simply marks ledger entries as synced locally for development.
+2. **Root public key & ledger:** replace the placeholder `houseCertRootPublicKeyJwk` and populate `authorizedHouseCertLedger` in [`src/certs/authorizedHouseCertLedger.ts`](../src/certs/authorizedHouseCertLedger.ts) with certificates issued by the root authority.
+
+Placeholder keys and an empty ledger should never ship to production; provide real values before deploying.
