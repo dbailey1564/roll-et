@@ -8,6 +8,7 @@ if [[ -z "${ROOT_PUBLIC_JWK:-}" ]]; then
   echo "ROOT_PUBLIC_JWK not set" >&2
   exit 1
 fi
+
 printf '%s' "$ROOT_PUBLIC_JWK" > .sec/root_public_jwk.json
 
 if [[ -n "${ROOT_PRIVATE_KEY:-}" ]]; then
