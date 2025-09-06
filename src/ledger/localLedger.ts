@@ -7,6 +7,7 @@ export type LedgerEventType =
   | 'receipt_issued'
   | 'join_challenge_issued'
   | 'admission'
+  | 'admission_rejected'
   | 'receipt_spent'
   | 'session_closed'
   | 'sync_export';
