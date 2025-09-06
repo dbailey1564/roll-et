@@ -3,11 +3,12 @@ import { bytesToBase64Url, base64UrlToBytes } from '../utils/base64'
 const subtle = globalThis.crypto.subtle
 
 export interface HouseCertPayload {
-  subject: string
-  publicKeyJwk: JsonWebKey
-  nbf: number
-  exp: number
-  capabilities: string[]
+  houseId: string
+  kid: string
+  housePubKey: JsonWebKey
+  notBefore: number
+  notAfter: number
+  roles: string[]
 }
 
 export interface HouseCert {
@@ -37,6 +38,6 @@ export async function issueHouseCert(payload: HouseCertPayload, rootKey: CryptoK
 
 export async function validateHouseCert(cert: HouseCert, rootKey: CryptoKey, now: number = Date.now()): Promise<boolean> {
   const { payload, signature } = cert
-  if (now < payload.nbf || now > payload.exp) return false
+  if (now < payload.notBefore || now > payload.notAfter) return false
   return verifyPayload(payload, signature, rootKey)
 }

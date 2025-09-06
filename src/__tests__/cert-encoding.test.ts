@@ -17,11 +17,12 @@ describe('certificate signature encoding utilities', () => {
     const root = await genKeyPair()
     const house = await genKeyPair()
     const payload = {
-      subject: 'house-1',
-      publicKeyJwk: await subtle().exportKey('jwk', house.publicKey),
-      nbf: Date.now() - 1000,
-      exp: Date.now() + 60_000,
-      capabilities: ['host rounds']
+      houseId: 'house-1',
+      kid: 'k1',
+      housePubKey: await subtle().exportKey('jwk', house.publicKey),
+      notBefore: Date.now() - 1000,
+      notAfter: Date.now() + 60_000,
+      roles: ['host rounds']
     }
     const data = encoder.encode(JSON.stringify(payload))
     const sigBuf = await subtle().sign({ name: 'ECDSA', hash: 'SHA-256' }, root.privateKey, data)

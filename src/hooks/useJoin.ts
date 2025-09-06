@@ -64,7 +64,7 @@ export function useJoin(){
         if (!valid) return
         const key = await crypto.subtle.importKey(
           'jwk',
-          challenge.houseCert.payload.publicKeyJwk,
+          challenge.houseCert.payload.housePubKey,
           { name: 'ECDSA', namedCurve: 'P-256' },
           true,
           ['verify']

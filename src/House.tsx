@@ -41,14 +41,14 @@ export default function House() {
     } catch {}
   }, [])
 
-  // Enforce that houseKey public key matches HouseCert publicKeyJwk
+  // Enforce that houseKey public key matches HouseCert housePubKey
   React.useEffect(() => {
     (async () => {
       if (!houseKey || !houseCert) { setKeyMismatch(false); return }
       try {
         const jwk = await crypto.subtle.exportKey('jwk', houseKey.publicKey)
         const a = JSON.stringify({ kty: jwk.kty, crv: (jwk as any).crv, x: (jwk as any).x, y: (jwk as any).y })
-        const b = JSON.stringify({ kty: houseCert.payload.publicKeyJwk.kty, crv: (houseCert.payload.publicKeyJwk as any).crv, x: (houseCert.payload.publicKeyJwk as any).x, y: (houseCert.payload.publicKeyJwk as any).y })
+        const b = JSON.stringify({ kty: houseCert.payload.housePubKey.kty, crv: (houseCert.payload.housePubKey as any).crv, x: (houseCert.payload.housePubKey as any).x, y: (houseCert.payload.housePubKey as any).y })
         setKeyMismatch(a !== b)
       } catch { setKeyMismatch(true) }
     })()

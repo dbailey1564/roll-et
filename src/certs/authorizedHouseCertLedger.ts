@@ -1,7 +1,8 @@
 import { HouseCert } from './houseCert'
 
 export interface AuthorizedHouseCertLedgerEntry {
-  subject: string
+  houseId: string
+  kid: string
   signature: string
 }
 
@@ -17,6 +18,9 @@ export const houseCertRootPublicKeyJwk: JsonWebKey = {
 
 export function isAuthorizedHouseCert(cert: HouseCert): boolean {
   return authorizedHouseCertLedger.some(
-    entry => entry.subject === cert.payload.subject && entry.signature === cert.signature
+    entry =>
+      entry.houseId === cert.payload.houseId &&
+      entry.kid === cert.payload.kid &&
+      entry.signature === cert.signature
   )
 }
