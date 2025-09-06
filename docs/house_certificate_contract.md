@@ -29,7 +29,7 @@ Authorize a device/operator to run **House** features for Roll‑et. Enables hos
 - **Seat policy interaction:** Hosting constrained by global rules (default **max 4 players per round**).
 - **Clock tolerance:** Validity checks allow ±5 min drift.
 
-## Required Claims / Assertions (Conceptual)
+## Required Claims / Assertions
 
 - `houseId` – unique identifier for the House device.
 - `kid` – certificate identifier for rotation and revocation.
@@ -38,6 +38,22 @@ Authorize a device/operator to run **House** features for Roll‑et. Enables hos
 - `notAfter` – timestamp when the Cert lapses.
 - `roles` – capabilities granted to the device.
 - `signature` – Root Authority ES256 signature over the above fields.
+
+```ts
+interface HouseCertPayload {
+  houseId: string
+  kid: string
+  housePubKey: JsonWebKey
+  notBefore: number
+  notAfter: number
+  roles: string[]
+}
+
+interface HouseCert {
+  payload: HouseCertPayload
+  signature: string // base64url
+}
+```
 
 ## Issuance (Input/Output)
 

@@ -16,11 +16,12 @@ describe('certificate flows', () => {
     const root = await genKeyPair()
     const houseKeys = await genKeyPair()
     const payload = {
-      subject: 'house-1',
-      publicKeyJwk: await subtle().exportKey('jwk', houseKeys.publicKey),
-      nbf: Date.now() - 1000,
-      exp: Date.now() + 60_000,
-      capabilities: ['host rounds']
+      houseId: 'house-1',
+      kid: 'k1',
+      housePubKey: await subtle().exportKey('jwk', houseKeys.publicKey),
+      notBefore: Date.now() - 1000,
+      notAfter: Date.now() + 60_000,
+      roles: ['host rounds']
     }
     const cert = await issueHouseCert(payload, root.privateKey)
     expect(await validateHouseCert(cert, root.publicKey)).toBe(true)

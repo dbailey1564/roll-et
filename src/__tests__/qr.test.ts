@@ -16,11 +16,12 @@ describe('QR flows', () => {
     const root = await genKeyPair()
     const house = await genKeyPair()
     const houseCert = await issueHouseCert({
-      subject: 'h1',
-      publicKeyJwk: await subtle().exportKey('jwk', house.publicKey),
-      nbf: Date.now() - 1000,
-      exp: Date.now() + 60_000,
-      capabilities: ['host rounds']
+      houseId: 'h1',
+      kid: 'k1',
+      housePubKey: await subtle().exportKey('jwk', house.publicKey),
+      notBefore: Date.now() - 1000,
+      notAfter: Date.now() + 60_000,
+      roles: ['host rounds']
     }, root.privateKey)
     const challenge = await createJoinChallenge(houseCert, 'r1')
     const qr = await joinChallengeToQR(challenge)
