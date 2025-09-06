@@ -18,15 +18,14 @@ Provide Players with secure, offline-verifiable receipts representing end-of-rou
 6. **Spent state:** House marks receipt as “spent” once used; cannot be replayed.  
 
 ## Required Claims / Assertions (Conceptual)
-- **Issuer:** House identity (via [House Certificate](./house_certificate_contract.md)).
+- **House ID:** Derived from the active [House Certificate](./house_certificate_contract.md).
+- **Player Binding:** `playerUidThumbprint` (hash of Player UID) tying receipt to Player pseudonym.
 - **Receipt ID:** Globally unique identifier for replay protection.
-- **Player Binding:** Player UID associated with receipt.
-- **Round Binding:** Round ID from which settlement originated.
-- **Settlement Value:** Currency amount (credits × valuation).
-- **Disposition:** Marked as “banked.”
-- **Timestamp:** Issuance time.
-- **Validity:** Optional expiry/policy window; may require renewal to remain spendable.
-- **Bet Certificate Reference:** `receiptId` serves as the `bankRef` recorded in [Bet Certificates](./bet_certificate_contract.md) and [Join Challenge/Response](./join_challenge_response_contract.md) responses.
+- **Kind:** `REDEEM` or `REBUY` indicating disposition.
+- **Amount:** Currency amount represented by the receipt.
+- **Issued At:** Timestamp of issuance.
+- **Expiry:** Optional `exp` after which renewal is required before spend.
+- **Bet Certificate Reference:** `receiptId` propagates as `bankRef` in [Bet Certificates](./bet_certificate_contract.md) and [Join Challenge/Response](./join_challenge_response_contract.md) responses.
 
 ## Issuance (Input/Output)
 - **Inputs:** Player UID, Round ID, net settlement amount.
@@ -39,21 +38,18 @@ Receipts can be exported or transferred as a JSON payload encoded into a QR:
 ```json
 {
   "type": "bank-receipt",
+  "houseId": "<house id>",
+  "playerUidThumbprint": "<thumbprint>",
   "receiptId": "<uuid>",
-  "player": "<player uid>",
-  "round": "<round id>",
-  "value": "<currency>",
-  "nbf": "<epoch ms>",
+  "kind": "REDEEM",
+  "amount": "<currency>",
+  "issuedAt": "<epoch ms>",
   "exp": "<optional epoch ms>",
-  "spent": false,
-  "betCertRef": "<bet cert id>",
   "sig": "<house signature>"
 }
 ```
 
-`betCertRef` links the receipt back to the [Bet Certificate](./bet_certificate_contract.md) that produced the settlement. The `exp` field (if present) governs when the receipt must be renewed.
-
-The `sig` field is the House's signature over the payload. Signature bytes are base64url‑encoded using the shared helper functions in `src/utils/base64.ts` (`bytesToBase64Url` / `base64UrlToBytes`), which work in both browser and Node environments.
+`kind` denotes whether the receipt is intended for `REDEEM` (payout) or `REBUY` (future seat funding). The `sig` field is the House's signature over the payload. Signature bytes are base64url‑encoded using the shared helpers in `src/utils/base64.ts` (`bytesToBase64Url` / `base64UrlToBytes`), which operate in both browser and Node environments.
 
 ## QR Generation & Scanning
 - BANK Receipts may be exported or transported as QR codes using [`bankReceiptQR.ts`](../src/bankReceiptQR.ts), which includes helpers for creating data URL images and parsing scanned payloads.
@@ -63,6 +59,13 @@ The `sig` field is the House's signature over the payload. Signature bytes are b
 - **Re-buy into round:** Player presents receipt; House verifies validity and converts value into the 4-credit round entry at the declared valuation (up to 8 credits cap). Any leftover remains stored.
 - **Withdraw (tender):** Player presents receipt; House verifies and pays out; marks receipt “spent.”
 Both usage paths mark the `receiptId` as spent and, when re-buying, propagate it as `bankRef` for the new round’s [Bet Certificate](./bet_certificate_contract.md).
+
+## Spend Challenge/Response
+1. **Initiation:** Player presents the receipt to the House.
+2. **Challenge:** House verifies receipt validity and issues a nonce‑based spend challenge bound to `{ receiptId, kind }`.
+3. **Response:** Player signs the challenge with the key that produced `playerUidThumbprint` and returns `{ receiptId, nonce, sig_player }`.
+4. **Verification:** House checks the signature, applies funds (`REDEEM` or `REBUY`), and logs a `ReceiptSpent` entry.
+5. **Ledger Update:** `ReceiptSpent` entries record `{ receiptId, playerUidThumbprint, amount, kind }` for sync.
 
 ## Verification (Offline by House or Player)
 - **Inputs:** Receipt + [House Certificate](./house_certificate_contract.md).
@@ -77,25 +80,25 @@ Both usage paths mark the `receiptId` as spent and, when re-buying, propagate it
 
 ## Replay Protection
 - **Receipt IDs:** Logged in the [Ledger & Sync](./ledger_sync_contract.md).
-- **Spent state:** House enforces single use (receipt marked spent once redeemed).  
-- **Ledger audit:** Any attempt to replay spent receipts logged at sync.  
+- **Spent state:** House enforces single use (receipt marked spent once redeemed).
+- **Ledger audit:** Any attempt to replay spent receipts logged at sync.
 
 ## [Ledger & Sync](./ledger_sync_contract.md)
-- **At issuance:** Receipt issuance logged with value, Player UID, round ID, and receipt ID.  
-- **At usage:** Ledger updated to mark receipt as spent (with usage type: re-buy or payout).  
+- **At issuance:** `receipt_issued` logs `{ playerUidThumbprint, amount, receiptId }`.
+- **At usage:** `receipt_spent` logs `{ receiptId, playerUidThumbprint, amount, kind }`.
 - **At sync:** Both issuance and spent states uploaded.
 - **Normalization:** Global analytics cap still enforced at $1,440/player/round ceiling.
 
 ## Expiry & Renewal
 - **Expiry:** If an `exp` is present and has passed, the receipt cannot be spent until renewed.
-- **Renewal:** Player presents the expired receipt to the House; after ledger verification, the House issues a new receipt with refreshed `exp` and references the prior `receiptId` in `betCertRef`.
+- **Renewal:** Only unspent receipts may be renewed. House verifies ledger, then issues a new receipt with a fresh `receiptId` and `exp`. The new issuance references the prior ID via `replaces: <old receiptId>`.
+- **Certificate gating:** Renewals are blocked while the House Certificate is in `LAPSED_SOFT` state.
 - **Spent receipts:** Once marked spent, receipts are ineligible for renewal.
 
 ## Error Semantics
 - **Expired/Invalid [House Certificate](./house_certificate_contract.md):** Receipt verifiable cryptographically but not spendable until House renews.
-- **Unknown receipt ID:** Denied and logged.  
-- **Already spent:** Denied; UX shows “receipt already used.”  
-- **Round mismatch:** Receipt valid only for originating round’s settlement context.  
+- **Unknown receipt ID:** Denied and logged.
+- **Already spent:** Denied; UX shows “receipt already used.”
 
 ## Security Invariants
 - **Offline verifiability:** Receipts validate without internet.  
