@@ -23,7 +23,9 @@ function luhnCheckDigit(digits: number[]): number {
 }
 
 export async function computeReceiptSpendCode(receipt: BankReceipt): Promise<string> {
-  const data = new TextEncoder().encode(`${receipt.receiptId}|${receipt.round}|${receipt.player}|${receipt.value}`)
+  const data = new TextEncoder().encode(
+    `${receipt.receiptId}|${receipt.houseId}|${receipt.playerUidThumbprint}|${receipt.amount}`
+  )
   const hash = await crypto.subtle.digest('SHA-256', data)
   const bytes = new Uint8Array(hash)
   // Take first 4 bytes and next 2 to form a 9-digit number space
