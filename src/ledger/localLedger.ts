@@ -7,14 +7,14 @@ export type LedgerEventType =
   | 'receipt_issued'
   | 'join_challenge_issued'
   | 'admission'
-  | 'receipt_spent';
+  | 'receipt_spent'
+  | 'session_closed'
+  | 'sync_export';
 
 export interface LedgerEntry<T = any> {
-  seq: number;
   prevHash: string | null;
   entryId: string;
   ts: number;
-  roundId: string;
   type: LedgerEventType;
   payload: T;
   sig?: string;
@@ -22,7 +22,7 @@ export interface LedgerEntry<T = any> {
 }
 
 const LEDGER_KEY = 'roll_et_ledger_v1';
-const LEDGER_SYNCED_KEY = 'roll_et_ledger_last_synced_seq';
+const LEDGER_SYNCED_KEY = 'roll_et_ledger_last_synced_entry_id';
 
 function readLedger(): LedgerEntry[] {
   try {
@@ -39,18 +39,17 @@ function writeLedger(entries: LedgerEntry[]): void {
   } catch {}
 }
 
-function readLastSyncedSeq(): number {
+function readLastSyncedEntryId(): string | null {
   try {
-    const raw = localStorage.getItem(LEDGER_SYNCED_KEY);
-    return raw ? Number(raw) || 0 : 0;
+    return localStorage.getItem(LEDGER_SYNCED_KEY);
   } catch {
-    return 0;
+    return null;
   }
 }
 
-function writeLastSyncedSeq(seq: number): void {
+function writeLastSyncedEntryId(entryId: string): void {
   try {
-    localStorage.setItem(LEDGER_SYNCED_KEY, String(seq));
+    localStorage.setItem(LEDGER_SYNCED_KEY, entryId);
   } catch {}
 }
 
@@ -64,23 +63,19 @@ async function sha256Hex(input: string): Promise<string> {
 
 export async function appendLedger<T = any>(
   type: LedgerEventType,
-  roundId: string,
   payload: T,
   opts: { sig?: string; merkleRoot?: string } = {},
 ): Promise<LedgerEntry<T>> {
   const entries = readLedger();
   const prev = entries[entries.length - 1];
-  const seq = (prev?.seq ?? 0) + 1;
   const ts = Date.now();
   const prevHash = prev?.entryId ?? null;
   const toHash = `${prevHash ?? ''}|${type}|${JSON.stringify(payload)}|${ts}`;
   const entryId = await sha256Hex(toHash);
   const entry: LedgerEntry<T> = {
-    seq,
     prevHash,
     entryId,
     ts,
-    roundId,
     type,
     payload,
     ...(opts.sig && { sig: opts.sig }),
@@ -96,11 +91,27 @@ export function getLedger(): LedgerEntry[] {
 }
 
 export function getUnsyncedEntries(): LedgerEntry[] {
-  const last = readLastSyncedSeq();
-  return readLedger().filter((e) => e.seq > last);
+  const last = readLastSyncedEntryId();
+  const entries = readLedger();
+  if (!last) return entries;
+  const idx = entries.findIndex((e) => e.entryId === last);
+  return idx >= 0 ? entries.slice(idx + 1) : entries;
 }
 
-export function markSynced(uptoSeq: number): void {
-  const last = readLastSyncedSeq();
-  if (uptoSeq > last) writeLastSyncedSeq(uptoSeq);
+export function markSynced(entryId: string): void {
+  if (entryId) writeLastSyncedEntryId(entryId);
+}
+
+export async function appendSessionClosed(
+  roundId: string,
+  opts: { sig?: string; merkleRoot?: string } = {},
+) {
+  return appendLedger('session_closed', { roundId }, opts);
+}
+
+export async function appendSyncExport(
+  payload: any,
+  opts: { sig?: string; merkleRoot?: string } = {},
+) {
+  return appendLedger('sync_export', payload, opts);
 }

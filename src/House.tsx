@@ -102,7 +102,8 @@ export default function House() {
     }
     setRoundState('locked');
     const roundId = String(stats.rounds + 1);
-    await appendLedger('round_locked', roundId, {
+    await appendLedger('round_locked', {
+      roundId,
       seatCount: players.length,
       maxSeats: MAX_SEATS,
       players: players.map((p) => ({
@@ -127,7 +128,8 @@ export default function House() {
       }, {}),
     );
     for (const c of certs) {
-      await appendLedger('bet_cert_issued', roundId, {
+      await appendLedger('bet_cert_issued', {
+        roundId,
         seat: c.seat,
         playerUidThumbprint: c.playerUidThumbprint,
         certId: c.certId,
@@ -163,7 +165,11 @@ export default function House() {
       return [...prev, np].sort((a, b) => a.id - b.id);
     });
     // Log admission to ledger for the upcoming round
-    await appendLedger('admission', String(stats.rounds + 1), { seat, name });
+    await appendLedger('admission', {
+      roundId: String(stats.rounds + 1),
+      seat,
+      name,
+    });
     setNewPlayerName('');
   };
 
@@ -236,17 +242,14 @@ export default function House() {
                     alert('Receipt already spent.');
                     return;
                   }
-                  await appendLedger(
-                    'receipt_spent',
-                    String(stats.rounds + 1),
-                    {
-                      receiptId: rec.receipt.receiptId,
-                      playerUidThumbprint: rec.receipt.playerUidThumbprint,
-                      amount: rec.receipt.amount,
-                      kind: rec.receipt.kind,
-                      method: 'code',
-                    },
-                  );
+                  await appendLedger('receipt_spent', {
+                    roundId: String(stats.rounds + 1),
+                    receiptId: rec.receipt.receiptId,
+                    playerUidThumbprint: rec.receipt.playerUidThumbprint,
+                    amount: rec.receipt.amount,
+                    kind: rec.receipt.kind,
+                    method: 'code',
+                  });
                   set.add(rec.receipt.receiptId);
                   localStorage.setItem(
                     spentKey,
@@ -318,7 +321,8 @@ export default function House() {
                         },
                       ].sort((a, b) => a.id - b.id),
                     );
-                    await appendLedger('admission', String(stats.rounds + 1), {
+                    await appendLedger('admission', {
+                      roundId: String(stats.rounds + 1),
                       seat,
                       player: matched!,
                       round: lastChallenge.round,
@@ -396,7 +400,8 @@ export default function House() {
                     },
                   ].sort((a, b) => a.id - b.id),
                 );
-                await appendLedger('admission', String(stats.rounds + 1), {
+                await appendLedger('admission', {
+                  roundId: String(stats.rounds + 1),
                   seat,
                   player: alias,
                   round: resp.round,
@@ -441,7 +446,8 @@ export default function House() {
                 setScanningSpend(false);
                 return;
               }
-              await appendLedger('receipt_spent', String(stats.rounds + 1), {
+              await appendLedger('receipt_spent', {
+                roundId: String(stats.rounds + 1),
                 receiptId: receipt.receiptId,
                 playerUidThumbprint: receipt.playerUidThumbprint,
                 amount: receipt.amount,
