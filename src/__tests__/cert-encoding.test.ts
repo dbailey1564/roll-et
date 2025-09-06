@@ -38,12 +38,14 @@ describe('certificate signature encoding utilities', () => {
     const house = await genKeyPair()
     const payload = {
       type: 'bet-cert' as const,
+      houseId: 'house-1',
+      roundId: 'r1',
+      seat: 1,
+      playerUidThumbprint: 'p1',
       certId: 'bet1',
-      player: 'p1',
-      round: 'r1',
+      issuedAt: Date.now() - 1000,
+      exp: Date.now() + 60_000,
       betHash: 'hash',
-      nbf: Date.now() - 1000,
-      exp: Date.now() + 60_000
     }
     const data = encoder.encode(JSON.stringify(payload))
     const sigBuf = await subtle().sign({ name: 'ECDSA', hash: 'SHA-256' }, house.privateKey, data)

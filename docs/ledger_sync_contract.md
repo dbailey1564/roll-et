@@ -60,7 +60,7 @@ Event types and their payload fields:
 - **`join_challenge_issued`** `{ round, nonce, nbf, exp }` — QR challenge parameters.
 - **`admission`** `{ seat, player?, name?, round?, method? }` — seat assignment with optional identifiers or join method.
 - **`round_locked`** `{ seatCount, maxSeats, players: [{ id, stake }] }` — round start snapshot.
-- **`bet_cert_issued`** `{ player, certId, betHash, exp }` — issued Bet Certificate details.
+- **`bet_cert_issued`** `{ seat, playerUidThumbprint, certId, betHash, exp }` — issued Bet Certificate details.
 - **`round_settled`** `{ roll, deltas }` — winning roll and per-seat credit changes.
 - **`receipt_issued`** `{ playerUidThumbprint, amount, receiptId }` — BANK receipt issuance.
 - **`receipt_spent`** `{ receiptId, playerUidThumbprint, amount, kind, method? }` — receipt redemption record.

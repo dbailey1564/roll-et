@@ -29,14 +29,19 @@ describe('QR flows', () => {
     const scanned = parseJoinChallenge(JSON.stringify(challenge))
     expect(await validateJoinChallenge(scanned, root.publicKey)).toBe(true)
 
-    const betCert = await generateBetCert({
-      certId: 'c1',
-      player: 'p1',
-      round: 'r1',
-      betHash: 'hash',
-      nbf: Date.now() - 1000,
-      exp: Date.now() + 60_000
-    }, house.privateKey)
+    const betCert = await generateBetCert(
+      {
+        houseId: 'h1',
+        roundId: 'r1',
+        seat: 1,
+        playerUidThumbprint: 'p1',
+        certId: 'c1',
+        betHash: 'hash',
+        issuedAt: Date.now() - 1000,
+        exp: Date.now() + 60_000,
+      },
+      house.privateKey,
+    )
     const betQR = await betCertToQR(betCert)
     expect(betQR.startsWith('data:image/png;base64')).toBe(true)
     const parsedBet = parseBetCert(JSON.stringify(betCert))

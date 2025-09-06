@@ -14,14 +14,19 @@ vi.mock('jsqr', () => ({ default: vi.fn(() => ({ data: mockData })) }))
 describe('BetCertScanner', () => {
   it('accepts a valid cert', async () => {
     const house = await genKeyPair()
-    const cert = await generateBetCert({
-      certId: 'c1',
-      player: 'p1',
-      round: 'r1',
-      betHash: 'h1',
-      nbf: Date.now() - 1000,
-      exp: Date.now() + 60000,
-    }, (house as CryptoKeyPair).privateKey)
+    const cert = await generateBetCert(
+      {
+        houseId: 'h1',
+        roundId: 'r1',
+        seat: 1,
+        playerUidThumbprint: 'p1',
+        certId: 'c1',
+        betHash: 'h1',
+        issuedAt: Date.now() - 1000,
+        exp: Date.now() + 60000,
+      },
+      (house as CryptoKeyPair).privateKey,
+    )
     mockData = JSON.stringify(cert)
 
     Object.defineProperty(navigator, 'mediaDevices', {
@@ -49,14 +54,19 @@ describe('BetCertScanner', () => {
   it('rejects an invalid cert', async () => {
     const goodHouse = await genKeyPair()
     const badHouse = await genKeyPair()
-    const cert = await generateBetCert({
-      certId: 'c1',
-      player: 'p1',
-      round: 'r1',
-      betHash: 'h1',
-      nbf: Date.now() - 1000,
-      exp: Date.now() + 60000,
-    }, (goodHouse as CryptoKeyPair).privateKey)
+    const cert = await generateBetCert(
+      {
+        houseId: 'h1',
+        roundId: 'r1',
+        seat: 1,
+        playerUidThumbprint: 'p1',
+        certId: 'c1',
+        betHash: 'h1',
+        issuedAt: Date.now() - 1000,
+        exp: Date.now() + 60000,
+      },
+      (goodHouse as CryptoKeyPair).privateKey,
+    )
     mockData = JSON.stringify(cert)
 
     Object.defineProperty(navigator, 'mediaDevices', {
