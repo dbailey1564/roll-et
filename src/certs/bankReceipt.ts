@@ -5,14 +5,13 @@ const encoder = new TextEncoder()
 
 export interface BankReceiptPayload {
   type: 'bank-receipt'
+  houseId: string
+  playerUidThumbprint: string
   receiptId: string
-  player: string
-  round: string
-  value: number
-  nbf: number
+  kind: 'REDEEM' | 'REBUY'
+  amount: number
+  issuedAt: number
   exp?: number
-  spent: boolean
-  betCertRef: string
 }
 
 export interface BankReceipt extends BankReceiptPayload {
@@ -32,24 +31,30 @@ async function verifyPayload(payload: BankReceiptPayload, sig: string, key: Cryp
   return subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, signature, data)
 }
 
-export async function issueBankReceipt(params: Omit<BankReceiptPayload, 'type' | 'spent'>, key: CryptoKey): Promise<BankReceipt> {
-  const payload: BankReceiptPayload = { type: 'bank-receipt', ...params, spent: false }
+export async function issueBankReceipt(
+  params: Omit<BankReceiptPayload, 'type'>,
+  key: CryptoKey
+): Promise<BankReceipt> {
+  const payload: BankReceiptPayload = { type: 'bank-receipt', ...params }
   const sig = await signPayload(payload, key)
   return { ...payload, sig }
 }
 
-export async function verifyBankReceipt(receipt: BankReceipt, key: CryptoKey, now: number = Date.now()): Promise<boolean> {
-  if (now < receipt.nbf || (receipt.exp && now > receipt.exp)) return false
+export async function verifyBankReceipt(
+  receipt: BankReceipt,
+  key: CryptoKey,
+  now: number = Date.now()
+): Promise<boolean> {
+  if (receipt.exp && now > receipt.exp) return false
   const payload: BankReceiptPayload = {
     type: 'bank-receipt',
+    houseId: receipt.houseId,
+    playerUidThumbprint: receipt.playerUidThumbprint,
     receiptId: receipt.receiptId,
-    player: receipt.player,
-    round: receipt.round,
-    value: receipt.value,
-    nbf: receipt.nbf,
+    kind: receipt.kind,
+    amount: receipt.amount,
+    issuedAt: receipt.issuedAt,
     exp: receipt.exp,
-    betCertRef: receipt.betCertRef,
-    spent: receipt.spent,
   }
   return verifyPayload(payload, receipt.sig, key)
 }
