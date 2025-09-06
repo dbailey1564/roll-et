@@ -18,4 +18,5 @@ export interface Player {
   bets: Bet[];
   pool: number;
   bank: number;
+  bankRef?: string;
 }
