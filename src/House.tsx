@@ -145,6 +145,12 @@ export default function House() {
       houseCert,
       String(stats.rounds + 1),
     );
+    await appendLedger('join_challenge_issued', {
+      round: challenge.round,
+      nonce: challenge.nonce,
+      nbf: challenge.nbf,
+      exp: challenge.exp,
+    });
     const qr = await joinChallengeToQR(challenge);
     setJoinQR(qr);
     setLastChallenge(challenge);
@@ -377,6 +383,9 @@ export default function House() {
                 !lastChallenge ||
                 !(await verifyJoinResponse(resp, lastChallenge))
               ) {
+                await appendLedger('admission_rejected', {
+                  reason: 'invalid_response',
+                });
                 alert('Join response does not match current challenge.');
                 setScanningJoinResp(false);
                 return;
@@ -400,11 +409,21 @@ export default function House() {
                     },
                   ].sort((a, b) => a.id - b.id),
                 );
+                const buyIn = resp.bankRef
+                  ? receipts.find((r) => r.receipt.receiptId === resp.bankRef)
+                      ?.receipt.amount ?? PER_ROUND_POOL
+                  : PER_ROUND_POOL;
                 await appendLedger('admission', {
-                  roundId: String(stats.rounds + 1),
+                  playerUid: resp.playerUid,
                   seat,
-                  player: alias,
-                  round: resp.round,
+                  buyIn,
+                  nonce: resp.nonce,
+                });
+              } else {
+                await appendLedger('admission_rejected', {
+                  playerUid: resp.playerUid,
+                  reason: 'seat_unavailable',
+                  nonce: resp.nonce,
                 });
               }
               setScanningJoinResp(false);
