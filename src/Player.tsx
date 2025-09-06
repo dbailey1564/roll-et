@@ -1,25 +1,27 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import { usePlayers } from './context/GameContext'
-import { fmtUSD, fmtUSDSign } from './utils'
-import { describeBet, potential } from './utils/betHelpers'
-import { useInstallPrompt } from './pwa/useInstallPrompt'
-import BetCertScanner from './components/BetCertScanner'
-import BankReceiptScanner from './components/BankReceiptScanner'
-import type { BetCert } from './certs/betCert'
-import type { BankReceipt } from './certs/bankReceipt'
-import JoinScanner from './components/JoinScanner'
-import { useJoin } from './hooks/useJoin'
-import BetCertDisplay from './components/player/BetCertDisplay'
-import BankReceiptDisplay from './components/player/BankReceiptDisplay'
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { usePlayers } from './context/GameContext';
+import { fmtUSD, fmtUSDSign } from './utils';
+import { describeBet, potential } from './utils/betHelpers';
+import { useInstallPrompt } from './pwa/useInstallPrompt';
+import BetCertScanner from './components/BetCertScanner';
+import BankReceiptScanner from './components/BankReceiptScanner';
+import type { BetCert } from './certs/betCert';
+import type { BankReceipt } from './certs/bankReceipt';
+import JoinScanner from './components/JoinScanner';
+import { useJoin } from './hooks/useJoin';
+import BetCertDisplay from './components/player/BetCertDisplay';
+import BankReceiptDisplay from './components/player/BankReceiptDisplay';
 
 export default function Player() {
-  const { players } = usePlayers()
-  const { canInstall, install, installed } = useInstallPrompt()
-  const [scanningCert, setScanningCert] = React.useState(false)
-  const [scanningReceipt, setScanningReceipt] = React.useState(false)
-  const [lastCert, setLastCert] = React.useState<BetCert | null>(null)
-  const [lastReceipt, setLastReceipt] = React.useState<BankReceipt | null>(null)
+  const { players } = usePlayers();
+  const { canInstall, install, installed } = useInstallPrompt();
+  const [scanningCert, setScanningCert] = React.useState(false);
+  const [scanningReceipt, setScanningReceipt] = React.useState(false);
+  const [lastCert, setLastCert] = React.useState<BetCert | null>(null);
+  const [lastReceipt, setLastReceipt] = React.useState<BankReceipt | null>(
+    null,
+  );
 
   const {
     playerId,
@@ -32,7 +34,7 @@ export default function Player() {
     showPairingCode,
     joinScannerProps,
     housePublicKey,
-  } = useJoin()
+  } = useJoin();
 
   return (
     <div className="container">
@@ -48,26 +50,30 @@ export default function Player() {
             type="text"
             placeholder="Your name"
             value={playerId}
-            onChange={e => {
-              const raw = e.target.value
-              const sanitized = raw.replace(/[^A-Za-z0-9._-]/g, '').slice(0, 16)
-              setPlayerId(sanitized)
+            onChange={(e) => {
+              const raw = e.target.value;
+              const sanitized = raw
+                .replace(/[^A-Za-z0-9._-]/g, '')
+                .slice(0, 16);
+              setPlayerId(sanitized);
             }}
           />
           <small>Allowed: A-Z a-z 0-9 . _ - (max 16)</small>
         </div>
         <button onClick={() => setJoining(true)}>Join Table</button>
         <button onClick={() => setScanningCert(true)}>Scan Bet Cert</button>
-        <button onClick={() => setScanningReceipt(true)}>Scan Bank Receipt</button>
+        <button onClick={() => setScanningReceipt(true)}>
+          Scan Bank Receipt
+        </button>
       </section>
 
       {scanningCert && housePublicKey && (
         <section className="bets">
           <BetCertScanner
             housePublicKey={housePublicKey}
-            onCert={cert => {
-              setLastCert(cert)
-              setScanningCert(false)
+            onCert={(cert) => {
+              setLastCert(cert);
+              setScanningCert(false);
             }}
           />
         </section>
@@ -77,9 +83,9 @@ export default function Player() {
         <section className="bets">
           <BankReceiptScanner
             housePublicKey={housePublicKey}
-            onReceipt={r => {
-              setLastReceipt(r)
-              setScanningReceipt(false)
+            onReceipt={(r) => {
+              setLastReceipt(r);
+              setScanningReceipt(false);
             }}
           />
         </section>
@@ -95,7 +101,11 @@ export default function Player() {
         <section className="bets">
           <h3>Your Join Response</h3>
           <img src={joinQR} alt="join response" />
-          {joinTotp && <div>TOTP (60s): <strong>{joinTotp}</strong></div>}
+          {joinTotp && (
+            <div>
+              TOTP (60s): <strong>{joinTotp}</strong>
+            </div>
+          )}
         </section>
       )}
 
@@ -115,18 +125,29 @@ export default function Player() {
       {lastReceipt && <BankReceiptDisplay receipt={lastReceipt} />}
 
       <section className="bets">
-        {players.map(p => (
-          <div key={p.id} className="player">
+        {players.map((p) => (
+          <div key={p.seat} className="player">
             <div className="name">{p.name}</div>
-            <div className="line"><span>Bank</span><strong className={p.bank>=0?'pos':'neg'}>{fmtUSDSign(p.bank)}</strong></div>
-            <div className="line"><span>Pool</span><strong>{p.pool}</strong></div>
+            <div className="line">
+              <span>Bank</span>
+              <strong className={p.bank >= 0 ? 'pos' : 'neg'}>
+                {fmtUSDSign(p.bank)}
+              </strong>
+            </div>
+            <div className="line">
+              <span>Pool</span>
+              <strong>{p.pool}</strong>
+            </div>
             <h4>Bets</h4>
             {p.bets.length ? (
               <ul>
                 {p.bets.map((b, i) => (
                   <li key={i}>
                     <span>{describeBet(b)}</span>
-                    <span> — {fmtUSD(b.amount)} → {fmtUSD(potential(b))}</span>
+                    <span>
+                      {' '}
+                      — {fmtUSD(b.amount)} → {fmtUSD(potential(b))}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -139,15 +160,20 @@ export default function Player() {
 
       <footer className="footer-bar">
         <div className="left">
-          {canInstall && <button className="install-btn" onClick={install}>Install</button>}
+          {canInstall && (
+            <button className="install-btn" onClick={install}>
+              Install
+            </button>
+          )}
           {installed && <span className="installed">Installed</span>}
         </div>
         <div className="center">© Kraken Consulting, LLC (Dev Team)</div>
         <div className="right">
-          <Link className="link-btn" to="/game">Game</Link>
+          <Link className="link-btn" to="/game">
+            Game
+          </Link>
         </div>
       </footer>
     </div>
-  )
+  );
 }
-

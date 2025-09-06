@@ -107,7 +107,7 @@ export default function House() {
       seatCount: players.length,
       maxSeats: MAX_SEATS,
       players: players.map((p) => ({
-        id: p.id,
+        playerUidThumbprint: p.uid,
         stake: p.bets.reduce((a, b) => a + b.amount, 0),
       })),
     });
@@ -130,7 +130,6 @@ export default function House() {
     for (const c of certs) {
       await appendLedger('bet_cert_issued', {
         roundId,
-        seat: c.seat,
         playerUidThumbprint: c.playerUidThumbprint,
         certId: c.certId,
         betHash: c.betHash,
@@ -157,7 +156,7 @@ export default function House() {
   };
 
   const addSeat = async () => {
-    const occupied = new Set(players.map((p) => p.id));
+    const occupied = new Set(players.map((p) => p.seat));
     const seat = Array.from({ length: MAX_SEATS }, (_, i) => i + 1).find(
       (n) => !occupied.has(n),
     );
@@ -166,15 +165,21 @@ export default function House() {
     if (!name) return;
     // Add locally
     setPlayers((prev) => {
-      if (prev.some((p) => p.id === seat)) return prev;
-      const np = { id: seat, name, bets: [], pool: PER_ROUND_POOL, bank: 0 };
-      return [...prev, np].sort((a, b) => a.id - b.id);
+      if (prev.some((p) => p.seat === seat)) return prev;
+      const np = {
+        seat,
+        uid: String(seat),
+        name,
+        bets: [],
+        pool: PER_ROUND_POOL,
+        bank: 0,
+      };
+      return [...prev, np].sort((a, b) => a.seat - b.seat);
     });
-    // Log admission to ledger for the upcoming round
     await appendLedger('admission', {
       roundId: String(stats.rounds + 1),
-      seat,
-      name,
+      playerUidThumbprint: String(seat),
+      buyIn: PER_ROUND_POOL,
     });
     setNewPlayerName('');
   };
@@ -309,7 +314,7 @@ export default function House() {
                     alert('No matching pairing secret for TOTP.');
                     return;
                   }
-                  const occupied = new Set(players.map((p) => p.id));
+                  const occupied = new Set(players.map((p) => p.seat));
                   const seat = Array.from(
                     { length: MAX_SEATS },
                     (_, i) => i + 1,
@@ -319,20 +324,21 @@ export default function House() {
                       [
                         ...prev,
                         {
-                          id: seat,
+                          seat,
+                          uid: matched!,
                           name: matched!,
                           bets: [],
                           pool: PER_ROUND_POOL,
                           bank: 0,
                         },
-                      ].sort((a, b) => a.id - b.id),
+                      ].sort((a, b) => a.seat - b.seat),
                     );
                     await appendLedger('admission', {
                       roundId: String(stats.rounds + 1),
-                      seat,
-                      player: matched!,
+                      playerUidThumbprint: matched!,
                       round: lastChallenge.round,
                       method: 'totp',
+                      buyIn: PER_ROUND_POOL,
                     });
                     setTotpInput('');
                   }
@@ -390,7 +396,7 @@ export default function House() {
                 setScanningJoinResp(false);
                 return;
               }
-              const occupied = new Set(players.map((p) => p.id));
+              const occupied = new Set(players.map((p) => p.seat));
               const seat = Array.from(
                 { length: MAX_SEATS },
                 (_, i) => i + 1,
@@ -401,27 +407,28 @@ export default function House() {
                   [
                     ...prev,
                     {
-                      id: seat,
+                      seat,
+                      uid: resp.playerUid,
                       name: alias,
                       bets: [],
                       pool: PER_ROUND_POOL,
                       bank: 0,
                     },
-                  ].sort((a, b) => a.id - b.id),
+                  ].sort((a, b) => a.seat - b.seat),
                 );
                 const buyIn = resp.bankRef
-                  ? receipts.find((r) => r.receipt.receiptId === resp.bankRef)
-                      ?.receipt.amount ?? PER_ROUND_POOL
+                  ? (receipts.find((r) => r.receipt.receiptId === resp.bankRef)
+                      ?.receipt.amount ?? PER_ROUND_POOL)
                   : PER_ROUND_POOL;
                 await appendLedger('admission', {
-                  playerUid: resp.playerUid,
-                  seat,
+                  roundId: String(stats.rounds + 1),
+                  playerUidThumbprint: resp.playerUid,
                   buyIn,
                   nonce: resp.nonce,
                 });
               } else {
                 await appendLedger('admission_rejected', {
-                  playerUid: resp.playerUid,
+                  playerUidThumbprint: resp.playerUid,
                   reason: 'seat_unavailable',
                   nonce: resp.nonce,
                 });
@@ -493,7 +500,7 @@ export default function House() {
           <h3>Bet Certs</h3>
           {betCertQRs.map((b) => {
             const seatId = b.seat;
-            const label = players.find((p) => p.id === seatId)?.name;
+            const label = players.find((p) => p.seat === seatId)?.name;
             return (
               <div key={b.seat}>
                 <div>
@@ -511,7 +518,7 @@ export default function House() {
           <h3>Bank Receipts</h3>
           {receipts.map((r) => {
             const seatId = Number(r.player);
-            const label = players.find((p) => p.id === seatId)?.name;
+            const label = players.find((p) => p.seat === seatId)?.name;
             return (
               <div key={r.player}>
                 <div>
@@ -543,7 +550,7 @@ export default function House() {
         <h4>Player Banks</h4>
         <ul>
           {players.map((p) => (
-            <li key={p.id}>
+            <li key={p.seat}>
               <span>{p.name}</span>
               <span> — </span>
               <strong className={p.bank >= 0 ? 'pos' : 'neg'}>
