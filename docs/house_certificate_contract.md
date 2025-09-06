@@ -9,17 +9,19 @@ Authorize a device/operator to run **House** features for Roll‑et. Enables hos
 - **Root Authority:** Platform root key baked into the PWA; anchor of trust.
 - **House Certificate (“Cert”):** Signed by Root; asserts House identity, allowed capabilities, and validity window.
 - **House Device(s):** Hold the private key corresponding to the public key attested in the Cert.
-- **SHDAM Constraint:** Single House Device Authorization Model — exactly one Cert per device; sharing across devices is forbidden.
+ - **SHDAM Constraint (Absolute):** Single House Device Authorization Model — exactly one Cert per device; sharing across devices is forbidden.
 - **Players:** Verify the Cert offline before joining a round.
 
 `HouseCert` is structured as a payload plus a `signature` field signed by the Root Authority with ES256. The signature bytes are base64url‑encoded using the shared helpers in `src/utils/base64.ts` (`bytesToBase64Url` / `base64UrlToBytes`), which support both browsers and Node (via `btoa`/`atob` or Node's `Buffer`).
 
 ## Lifecycle & States
 
-- **VALID:** Within `notBefore`/`notAfter`; all hosting, issuance, and sync operations allowed.
-- **WARNING:** Approaching `notAfter`; hosting and issuance allowed but UI prompts renewal.
-- **LAPSED_SOFT:** Past `notAfter` but within soft-lapse policy window; verification of past artifacts allowed, all hosting and issuance forbidden.
-- **EXPIRED/REVOKED:** Outside lapse window or revoked; verification only, no hosting, issuance, or sync permitted.
+`VALID → WARNING → LAPSED_SOFT → EXPIRED/REVOKED`
+
+- **VALID:** allowed — hosting, issuance, ledger sync; forbidden — none.
+- **WARNING:** allowed — hosting, issuance, ledger sync; forbidden — none (UI prompts renewal).
+- **LAPSED_SOFT:** allowed — verification of past artifacts; forbidden — hosting, issuance, ledger sync.
+- **EXPIRED/REVOKED:** allowed — offline verification only; forbidden — hosting, issuance, ledger sync.
 
 ## Validity & Policy
 
@@ -29,15 +31,10 @@ Authorize a device/operator to run **House** features for Roll‑et. Enables hos
 - **Seat policy interaction:** Hosting constrained by global rules (default **max 4 players per round**).
 - **Clock tolerance:** Validity checks allow ±5 min drift.
 
-## Required Claims / Assertions
+## Required Fields
 
-- `houseId` – unique identifier for the House device.
-- `kid` – certificate identifier for rotation and revocation.
-- `housePubKey` – ES256 public key corresponding to the device’s private key.
-- `notBefore` – timestamp when the Cert becomes valid.
-- `notAfter` – timestamp when the Cert lapses.
-- `roles` – capabilities granted to the device.
-- `signature` – Root Authority ES256 signature over the above fields.
+HouseCert payload fields: `{houseId, kid, housePubKey, notBefore, notAfter, roles}`.
+Root Authority signs the canonical JSON representation with ES256, producing a base64url `signature`.
 
 ```ts
 interface HouseCertPayload {
@@ -51,7 +48,7 @@ interface HouseCertPayload {
 
 interface HouseCert {
   payload: HouseCertPayload
-  signature: string // base64url
+  signature: string // base64url, Root ES256 signature
 }
 ```
 
