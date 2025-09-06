@@ -24,7 +24,8 @@ flowchart TD
 
     H --> RespScan[Scan JoinResponse]
     RespScan --> SeatAssign[Assign seat + log admission]
-    SeatAssign --> L1
+    SeatAssign --> AdmitConf[Confirm Admission]
+    AdmitConf --> L1
 
     H --> Bets[Open Round; seats place bets]
     Bets --> Lock[Lock Bets]
@@ -39,9 +40,11 @@ flowchart TD
   end
 
   H --> SyncHost[Sync on Host selection - only online moment]
-  L1 --> L2 --> L3 --> SyncHost
+  L1 --> L2 --> L3 --> SyncPending[Unsynced Ledger]
+  SyncPending --> SyncHost
   SyncHost --> Challenge[Authority /sync/challenge]:::cloud
   Challenge --> Commit[Authority /sync]:::cloud
+  Commit --> LedgerSynced[(Ledger Synced)]
 
   classDef cloud fill:#eef,stroke:#88f
   classDef optional fill:#ffd,stroke:#cc9
