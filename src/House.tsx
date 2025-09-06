@@ -139,21 +139,27 @@ export default function House() {
             <button onClick={async () => {
               const code = spendCodeInput
               if (code.length < 10) return
-              const rec = receipts.find(r => r.spendCode && r.spendCode === code)
-              if (!rec) { alert('Receipt not found for code.'); return }
-              const ok = await verifyBankReceipt(rec.receipt, houseKey!.publicKey)
-              if (!ok) { alert('Invalid or expired receipt'); return }
-              const spentKey = 'roll_et_spent_receipts'
-              try {
-                const raw = localStorage.getItem(spentKey)
-                const set = new Set<string>(raw ? JSON.parse(raw) as string[] : [])
-                if (set.has(rec.receipt.receiptId)) { alert('Receipt already spent.'); return }
-                await appendLedger('receipt_spent', String(stats.rounds + 1), { receiptId: rec.receipt.receiptId, player: rec.player, value: rec.receipt.value, method: 'code' })
-                set.add(rec.receipt.receiptId)
-                localStorage.setItem(spentKey, JSON.stringify(Array.from(set)))
-                alert('Receipt marked as spent.')
-                setSpendCodeInput('')
-              } catch { alert('Failed to record spend.'); }
+                const rec = receipts.find(r => r.spendCode && r.spendCode === code)
+                if (!rec) { alert('Receipt not found for code.'); return }
+                const ok = await verifyBankReceipt(rec.receipt, houseKey!.publicKey)
+                if (!ok) { alert('Invalid or expired receipt'); return }
+                const spentKey = 'roll_et_spent_receipts'
+                try {
+                  const raw = localStorage.getItem(spentKey)
+                  const set = new Set<string>(raw ? JSON.parse(raw) as string[] : [])
+                  if (set.has(rec.receipt.receiptId)) { alert('Receipt already spent.'); return }
+                  await appendLedger('receipt_spent', String(stats.rounds + 1), {
+                    receiptId: rec.receipt.receiptId,
+                    playerUidThumbprint: rec.receipt.playerUidThumbprint,
+                    amount: rec.receipt.amount,
+                    kind: rec.receipt.kind,
+                    method: 'code',
+                  })
+                  set.add(rec.receipt.receiptId)
+                  localStorage.setItem(spentKey, JSON.stringify(Array.from(set)))
+                  alert('Receipt marked as spent.')
+                  setSpendCodeInput('')
+                } catch { alert('Failed to record spend.'); }
             }}>Spend by code</button>
           </div>
           <div className="manual-roll">
@@ -250,7 +256,12 @@ export default function House() {
             onReceipt={async (receipt) => {
               const ok = await verifyBankReceipt(receipt, houseKey.publicKey)
               if (!ok) { alert('Invalid or expired receipt'); setScanningSpend(false); return }
-              await appendLedger('receipt_spent', String(stats.rounds + 1), { receiptId: receipt.receiptId, player: receipt.player, value: receipt.value })
+                await appendLedger('receipt_spent', String(stats.rounds + 1), {
+                  receiptId: receipt.receiptId,
+                  playerUidThumbprint: receipt.playerUidThumbprint,
+                  amount: receipt.amount,
+                  kind: receipt.kind,
+                })
               try {
                 const key = 'roll_et_spent_receipts'
                 const raw = localStorage.getItem(key)
