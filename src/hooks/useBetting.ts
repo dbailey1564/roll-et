@@ -14,7 +14,7 @@ export function useBetting() {
   const { players, setPlayers } = usePlayers()
   const { roundState, setRoundState } = useRoundState()
   const { stats, setStats } = useStats()
-  const { houseKey, betCerts, setBetCerts, setReceipts } = useHouse()
+    const { houseKey, setBetCerts, setReceipts } = useHouse()
 
   const DEFAULT_BET = 1
   const [amount, setAmount] = React.useState<number>(() => {
@@ -140,25 +140,29 @@ export function useBetting() {
       return { rounds: prev.rounds + 1, hits, banks }
     })
 
-    if (houseKey) {
-      const winners = players
-        .filter(p => deltas[p.id] > 0)
-        .map(p => ({ player: p.id, value: deltas[p.id], betCertRef: betCerts[p.id] || '' }))
-      const roundId = String(stats.rounds + 1)
-      const recs = await issueReceiptsForWinners(winners, roundId, houseKey.privateKey)
-      setReceipts(recs)
-      for (let i = 0; i < winners.length; i++) {
-        const w = winners[i]
-        const rec = (recs[i] && recs[i].receipt) ? recs[i] : undefined
-        await appendLedger('receipt_issued', roundId, {
-          player: String(w.player),
-          value: w.value,
-          betCertRef: w.betCertRef,
-          receiptId: rec?.receipt.receiptId,
-          spendCode: rec?.spendCode,
-        })
+      if (houseKey) {
+        const winners = players
+          .filter(p => deltas[p.id] > 0)
+          .map(p => ({
+            player: p.id,
+            playerUidThumbprint: String(p.id),
+            amount: deltas[p.id],
+            kind: 'REBUY' as const,
+          }))
+        const roundId = String(stats.rounds + 1)
+        const houseId = 'house-1'
+        const recs = await issueReceiptsForWinners(winners, roundId, houseId, houseKey.privateKey)
+        setReceipts(recs)
+        for (let i = 0; i < winners.length; i++) {
+          const w = winners[i]
+          const rec = (recs[i] && recs[i].receipt) ? recs[i] : undefined
+          await appendLedger('receipt_issued', roundId, {
+            playerUidThumbprint: w.playerUidThumbprint,
+            amount: w.amount,
+            receiptId: rec?.receipt.receiptId,
+          })
+        }
       }
-    }
 
     setPlayers(nextPlayers)
     await appendLedger('round_settled', String(stats.rounds + 1), { roll, deltas })

@@ -42,15 +42,18 @@ describe('QR flows', () => {
     const parsedBet = parseBetCert(JSON.stringify(betCert))
     expect(parsedBet.certId).toBe(betCert.certId)
 
-    const receipt = await issueBankReceipt({
-      receiptId: 'rec1',
-      player: 'p1',
-      round: 'r1',
-      value: 10,
-      nbf: Date.now() - 1000,
-      exp: Date.now() + 60_000,
-      betCertRef: betCert.certId,
-    }, house.privateKey)
+      const receipt = await issueBankReceipt(
+        {
+          houseId: 'h1',
+          playerUidThumbprint: 'p1',
+          receiptId: 'rec1',
+          kind: 'REBUY',
+          amount: 10,
+          issuedAt: Date.now() - 1000,
+          exp: Date.now() + 60_000,
+        },
+        house.privateKey
+      )
     const receiptQR = await bankReceiptToQR(receipt)
     expect(receiptQR.startsWith('data:image/png;base64')).toBe(true)
     const parsedReceipt = parseBankReceipt(JSON.stringify(receipt))
@@ -59,15 +62,18 @@ describe('QR flows', () => {
 
   it('encodes and decodes a bank receipt QR round trip', async () => {
     const house = await genKeyPair()
-    const receipt = await issueBankReceipt({
-      receiptId: 'rec2',
-      player: 'p2',
-      round: 'r2',
-      value: 20,
-      nbf: Date.now() - 1000,
-      exp: Date.now() + 60_000,
-      betCertRef: 'cert2',
-    }, house.privateKey)
+      const receipt = await issueBankReceipt(
+        {
+          houseId: 'h1',
+          playerUidThumbprint: 'p2',
+          receiptId: 'rec2',
+          kind: 'REBUY',
+          amount: 20,
+          issuedAt: Date.now() - 1000,
+          exp: Date.now() + 60_000,
+        },
+        house.privateKey
+      )
 
     const dataUrl = await bankReceiptToQR(receipt)
     const buf = Buffer.from(dataUrl.split(',')[1], 'base64')

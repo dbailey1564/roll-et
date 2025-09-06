@@ -55,27 +55,26 @@ describe('certificate signature encoding utilities', () => {
     expect(await verifyBetCert(cert, house.publicKey)).toBe(true)
   })
 
-  it('bankReceipt roundtrip signature', async () => {
-    const house = await genKeyPair()
-    const payload = {
-      type: 'bank-receipt' as const,
-      receiptId: 'rec1',
-      player: 'p1',
-      round: 'r1',
-      value: 100,
-      nbf: Date.now() - 1000,
-      exp: Date.now() + 60_000,
-      betCertRef: 'bet1',
-      spent: false
-    }
-    const data = encoder.encode(JSON.stringify(payload))
-    const sigBuf = await subtle().sign({ name: 'ECDSA', hash: 'SHA-256' }, house.privateKey, data)
-    const sigBytes = new Uint8Array(sigBuf)
-    const encoded = bytesToBase64Url(sigBytes)
-    const decoded = base64UrlToBytes(encoded)
-    expect(decoded).toEqual(sigBytes)
-    const receipt = { ...payload, sig: encoded }
-    expect(await verifyBankReceipt(receipt, house.publicKey)).toBe(true)
-  })
+    it('bankReceipt roundtrip signature', async () => {
+      const house = await genKeyPair()
+      const payload = {
+        type: 'bank-receipt' as const,
+        houseId: 'house-1',
+        playerUidThumbprint: 'p1',
+        receiptId: 'rec1',
+        kind: 'REBUY' as const,
+        amount: 100,
+        issuedAt: Date.now() - 1000,
+        exp: Date.now() + 60_000,
+      }
+      const data = encoder.encode(JSON.stringify(payload))
+      const sigBuf = await subtle().sign({ name: 'ECDSA', hash: 'SHA-256' }, house.privateKey, data)
+      const sigBytes = new Uint8Array(sigBuf)
+      const encoded = bytesToBase64Url(sigBytes)
+      const decoded = base64UrlToBytes(encoded)
+      expect(decoded).toEqual(sigBytes)
+      const receipt = { ...payload, sig: encoded }
+      expect(await verifyBankReceipt(receipt, house.publicKey)).toBe(true)
+    })
 })
 

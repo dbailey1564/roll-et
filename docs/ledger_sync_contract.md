@@ -59,8 +59,8 @@ Event types and their payload fields:
 - **`round_locked`** `{ seatCount, maxSeats, players: [{ id, stake }] }` — round start snapshot.
 - **`bet_cert_issued`** `{ player, certId, betHash, exp }` — issued Bet Certificate details.
 - **`round_settled`** `{ roll, deltas }` — winning roll and per-seat credit changes.
-- **`receipt_issued`** `{ player, value, betCertRef, receiptId?, spendCode? }` — BANK receipt issuance.
-- **`receipt_spent`** `{ receiptId, player, value, method? }` — receipt redemption record.
+- **`receipt_issued`** `{ playerUidThumbprint, amount, receiptId }` — BANK receipt issuance.
+- **`receipt_spent`** `{ receiptId, playerUidThumbprint, amount, kind, method? }` — receipt redemption record.
 
 ## Sync Process
 
