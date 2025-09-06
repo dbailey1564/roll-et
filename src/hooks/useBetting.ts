@@ -42,15 +42,15 @@ export function useBetting() {
   const [winning, setWinning] = React.useState<number | null>(null);
 
   const [activeId, setActiveId] = React.useState<number | null>(
-    players[0]?.id ?? null,
+    players[0]?.seat ?? null,
   );
   React.useEffect(() => {
-    if (activeId != null && players.some((p) => p.id === activeId)) return;
-    if (players.length > 0) setActiveId(players[0].id);
+    if (activeId != null && players.some((p) => p.seat === activeId)) return;
+    if (players.length > 0) setActiveId(players[0].seat);
     else setActiveId(null);
   }, [players]);
 
-  const active = players.find((p) => p.id === activeId) || players[0];
+  const active = players.find((p) => p.seat === activeId) || players[0];
   const maxForActive = active ? Math.max(MIN_BET, active.pool) : MIN_BET;
 
   React.useEffect(() => {
@@ -102,7 +102,7 @@ export function useBetting() {
     if (!p || !canPlace(p)) return;
     switch (mode.kind) {
       case 'single':
-        addBetFor(p.id, { type: 'single', selection: [n], amount });
+        addBetFor(p.seat, { type: 'single', selection: [n], amount });
         break;
       case 'split': {
         const first = (mode as any).first as number | undefined;
@@ -114,27 +114,27 @@ export function useBetting() {
             return;
           }
           const pair = [first, n].sort((a, b) => a - b);
-          addBetFor(p.id, { type: 'split', selection: pair, amount });
+          addBetFor(p.seat, { type: 'split', selection: pair, amount });
           setMode({ kind: 'split' });
         }
         break;
       }
       case 'corner': {
         const q = makeCornerFromAnchor(n);
-        if (q) addBetFor(p.id, { type: 'corner', selection: q, amount });
+        if (q) addBetFor(p.seat, { type: 'corner', selection: q, amount });
         break;
       }
       case 'high':
-        addBetFor(p.id, { type: 'high', selection: [], amount });
+        addBetFor(p.seat, { type: 'high', selection: [], amount });
         break;
       case 'low':
-        addBetFor(p.id, { type: 'low', selection: [], amount });
+        addBetFor(p.seat, { type: 'low', selection: [], amount });
         break;
       case 'even':
-        addBetFor(p.id, { type: 'even', selection: [], amount });
+        addBetFor(p.seat, { type: 'even', selection: [], amount });
         break;
       case 'odd':
-        addBetFor(p.id, { type: 'odd', selection: [], amount });
+        addBetFor(p.seat, { type: 'odd', selection: [], amount });
         break;
     }
   };
@@ -149,11 +149,13 @@ export function useBetting() {
     if (!Number.isInteger(roll) || roll < 1 || roll > 20) return;
 
     const deltas: Record<number, number> = {};
+    const deltasUid: Record<string, number> = {};
     const nextPlayers = players.map((p) => {
       const stake = p.bets.reduce((a, b) => a + b.amount, 0);
       const win = resolveRound(roll, p.bets);
       const delta = win - stake;
-      deltas[p.id] = delta;
+      deltas[p.seat] = delta;
+      deltasUid[p.uid] = delta;
       return { ...p, bank: p.bank + delta };
     });
 
@@ -162,18 +164,18 @@ export function useBetting() {
       hits[roll] = (hits[roll] || 0) + 1;
       const banks = { ...prev.banks };
       nextPlayers.forEach((p) => {
-        banks[p.id] = p.bank;
+        banks[p.seat] = p.bank;
       });
       return { rounds: prev.rounds + 1, hits, banks };
     });
 
     if (houseKey) {
       const winners = players
-        .filter((p) => deltas[p.id] > 0)
+        .filter((p) => deltas[p.seat] > 0)
         .map((p) => ({
-          player: p.id,
-          playerUidThumbprint: String(p.id),
-          amount: deltas[p.id],
+          player: p.seat,
+          playerUidThumbprint: p.uid,
+          amount: deltas[p.seat],
           kind: 'REBUY' as const,
         }));
       const roundId = String(stats.rounds + 1);
@@ -201,7 +203,7 @@ export function useBetting() {
     await appendLedger('round_settled', {
       roundId: String(stats.rounds + 1),
       roll,
-      deltas,
+      deltas: deltasUid,
     });
     setHistory((h) => [{ roll, deltas, time: Date.now() }, ...h].slice(0, 30));
     setWinning(roll);

@@ -1,4 +1,4 @@
-import type { Bet } from './game/engine'
+import type { Bet } from './game/engine';
 
 export type BetMode =
   | { kind: 'single' }
@@ -7,14 +7,15 @@ export type BetMode =
   | { kind: 'high' }
   | { kind: 'low' }
   | { kind: 'even' }
-  | { kind: 'odd' }
+  | { kind: 'odd' };
 
-export type RoundState = 'open' | 'locked' | 'settled'
+export type RoundState = 'open' | 'locked' | 'settled';
 
 export interface Player {
-  id: number
-  name: string
-  bets: Bet[]
-  pool: number
-  bank: number
+  seat: number;
+  uid: string;
+  name: string;
+  bets: Bet[];
+  pool: number;
+  bank: number;
 }
