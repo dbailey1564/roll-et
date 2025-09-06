@@ -4,6 +4,7 @@ import {
   createJoinResponse,
   verifyJoinResponse,
 } from '../join';
+import { base64UrlToBytes, bytesToBase64Url } from '../utils/base64';
 
 const subtle = globalThis.crypto.subtle;
 
@@ -37,7 +38,10 @@ describe('verifyJoinResponse', () => {
     const challenge = await createJoinChallenge(houseCert, 'r1');
     const playerKeys = await genPlayerKeys();
     const response = await createJoinResponse('player1', challenge, playerKeys);
-    const tampered = { ...response, sig: response.sig.slice(0, -1) + 'A' };
+    const bytes = base64UrlToBytes(response.sig);
+    bytes[0] ^= 0xff; // flip first byte
+    const tamperedSig = bytesToBase64Url(bytes);
+    const tampered = { ...response, sig: tamperedSig };
     expect(await verifyJoinResponse(tampered, challenge)).toBe(false);
   });
 });
