@@ -10,47 +10,64 @@ Provide a portable, offline-verifiable proof of a Player’s locked bet in a spe
 - **Player Device:** Receives and stores Bet Certs; uses them to verify locked bets offline.
 
 ## Lifecycle & States
-1. **Pre-lock:** Players submit bets during betting window.  
-2. **Lock:** House freezes all bets; computes normalized bet hashes.  
-3. **Cert Issuance:** For each Player, House issues a Bet Cert binding them to their bet.  
+1. **Pre-lock:** Players submit bets during betting window.
+2. **Lock:** House freezes all bets; canonicalizes each slip and computes `betHash = SHA-256(canonicalSlip)`.
+3. **Cert Issuance:** For each Player, House issues a Bet Cert binding them to their bet.
 4. **Post-lock:** Players store Bet Cert locally; can scan/share it to reopen read-only views.  
 5. **Expiry:** Cert validity ends after short TTL (renewal possible for read-only access).  
 
 ## Required Claims / Assertions (Conceptual)
 - **Issuer:** House identity (via [House Certificate](./house_certificate_contract.md)).
-- **Cert ID:** Unique identifier for replay protection.  
-- **Player Binding:** Player UID bound into the Cert.  
-- **Round Binding:** Round identifier included.  
-- **Bet Hash:** Cryptographic hash of the Player’s normalized bet slip.
-- **Validity Window:** Short not-before / not-after times (minutes).
+- **Cert ID:** Unique identifier for replay protection.
+- **Player Binding:** Player UID thumbprint bound into the Cert.
+- **Round Binding:** Round identifier included.
+- **Seat:** Seat number within the round.
+- **Bet Hash:** `betHash = SHA-256(canonicalSlip)`.
+- **Validity Window:** `issuedAt` and `exp` timestamps (minutes).
 - **Bank Reference:** Optional `bankRef` pointing to the [BANK Receipt](./bank_receipt_contract.md) ID used for the buy-in.
+- **Renewal Link:** Optional `renewalOf` referencing the prior `certId` for view-only renewals.
 - **Optional Hints:** Minimal UI hints (e.g., bet summary) if desired.
 
 ## Issuance (Input/Output)
-- **Inputs:** Normalized bet slip; Player UID; Round ID.
-- **Process:** House computes bet hash, constructs Cert payload, signs with House key.
+- **Inputs:** Canonical bet slip; Player UID; Round ID; seat.
+- **Process:** House canonicalizes the slip, computes `betHash = SHA-256(canonicalSlip)`, constructs payload, and signs with its ES256 key.
 - **Outputs:** Player receives compact Cert (e.g., QR, local storage).
 
 ## QR Payload Format
-Bet Certs may be exported as a compact JSON object encoded into a QR for portability:
+Bet Cert payloads encode the following fields:
 
 ```json
 {
-  "type": "bet-cert",
+  "houseId": "<house id>",
+  "roundId": "<round id>",
+  "seat": 1,
+  "playerUidThumbprint": "<thumbprint>",
   "certId": "<uuid>",
-  "player": "<player uid>",
-  "round": "<round id>",
-  "betHash": "<sha256>",
-  "nbf": "<epoch ms>",
+  "issuedAt": "<epoch ms>",
   "exp": "<epoch ms>",
-  "bankRef": "<optional receiptId>",
-  "sig": "<house signature>"
+  "betHash": "<sha256>"
 }
 ```
 
-`bankRef` links back to the funding [BANK Receipt](./bank_receipt_contract.md) if one was used. The `exp` value sets the short TTL; after expiry the Player must renew for a read‑only view.
+The House signs this payload with ES256 (P‑256 ECDSA over SHA‑256). The QR encodes the payload plus `sig`:
 
-The `sig` field contains the House's signature over the payload. Signature bytes are base64url‑encoded using the shared helper functions in `src/utils/base64.ts` (`bytesToBase64Url` / `base64UrlToBytes`), which support both browser and Node environments.
+```json
+{
+  "houseId": "<house id>",
+  "roundId": "<round id>",
+  "seat": 1,
+  "playerUidThumbprint": "<thumbprint>",
+  "certId": "<uuid>",
+  "issuedAt": "<epoch ms>",
+  "exp": "<epoch ms>",
+  "betHash": "<sha256>",
+  "sig": "<base64url ES256 signature>"
+}
+```
+
+Optional fields like `bankRef` or `renewalOf` may appear when applicable. The `exp` value sets the short TTL; after expiry the Player must renew for a read‑only view.
+
+Signature bytes are base64url‑encoded using the shared helper functions in `src/utils/base64.ts` (`bytesToBase64Url` / `base64UrlToBytes`).
 
 ## QR Generation & Scanning
 - Bet Cert payloads can be exported or shared as QR images using [`betCertQR.ts`](../src/betCertQR.ts), which provides helpers for generating data URLs and parsing scanned strings.
@@ -58,13 +75,13 @@ The `sig` field contains the House's signature over the payload. Signature bytes
 
 ## Renewal
 - **Purpose:** Allow Player to continue reopening a locked bet beyond initial short TTL.
-- **Mechanism:** Player presents expired Cert (QR or stored payload) to House; House verifies ledger state and issues a fresh Cert with an updated `exp` while keeping the original `certId` and `bankRef`.
+- **Mechanism:** Player presents expired Cert (QR or stored payload) to House; House verifies ledger state and issues a fresh Cert with a new `certId`, a `renewalOf` link to the prior Cert, the same `betHash`, and an updated `exp`.
   - **Invariants:** Renewal allowed only for read-only view; no mutation possible. Renewal requests referencing spent [BANK Receipts](./bank_receipt_contract.md) are denied.
 
 ## Verification (Offline by Player or Others)
 - **Inputs:** Bet Cert + [House Certificate](./house_certificate_contract.md).
 - **Checks:**  
-  - Cert signature verifies against House key.  
+  - Cert ES256 signature verifies against House key.
   - [House Certificate](./house_certificate_contract.md) valid and within window.
   - Cert validity window not expired (unless for read-only historical view).  
   - Round binding matches context.  
