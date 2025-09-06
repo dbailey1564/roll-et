@@ -115,34 +115,38 @@ export async function verifyJoinResponse(
   response: JoinResponse,
   challenge: JoinChallenge,
 ): Promise<boolean> {
-  if (response.round !== challenge.round) return false;
-  if (response.nonce !== challenge.nonce) return false;
-  const playerKey = await subtle.importKey(
-    'jwk',
-    response.playerPubKey,
-    { name: 'ECDSA', namedCurve: 'P-256' },
-    true,
-    ['verify'],
-  );
-  const expectedUid = await derivePlayerUid(
-    playerKey,
-    challenge.houseCert.payload.houseId,
-  );
-  if (expectedUid !== response.playerUid) return false;
-  const payload: JoinResponsePayload = {
-    playerUid: response.playerUid,
-    playerPubKey: response.playerPubKey,
-    round: response.round,
-    seat: response.seat,
-    nonce: response.nonce,
-    bankRef: response.bankRef,
-  };
-  const sigBytes = base64UrlToBytes(response.sig) as Uint8Array<ArrayBuffer>;
-  const payloadData = encoder.encode(JSON.stringify(payload));
-  return subtle.verify(
-    { name: 'ECDSA', hash: 'SHA-256' },
-    playerKey,
-    sigBytes,
-    payloadData,
-  );
+  try {
+    if (response.round !== challenge.round) return false;
+    if (response.nonce !== challenge.nonce) return false;
+    const playerKey = await subtle.importKey(
+      'jwk',
+      response.playerPubKey,
+      { name: 'ECDSA', namedCurve: 'P-256' },
+      true,
+      ['verify'],
+    );
+    const expectedUid = await derivePlayerUid(
+      playerKey,
+      challenge.houseCert.payload.houseId,
+    );
+    if (expectedUid !== response.playerUid) return false;
+    const payload: JoinResponsePayload = {
+      playerUid: response.playerUid,
+      playerPubKey: response.playerPubKey,
+      round: response.round,
+      seat: response.seat,
+      nonce: response.nonce,
+      bankRef: response.bankRef,
+    };
+    const sigBytes = base64UrlToBytes(response.sig);
+    const payloadData = encoder.encode(JSON.stringify(payload));
+    return await subtle.verify(
+      { name: 'ECDSA', hash: 'SHA-256' },
+      playerKey,
+      sigBytes,
+      payloadData,
+    );
+  } catch {
+    return false;
+  }
 }
