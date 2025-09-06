@@ -12,8 +12,8 @@ describe('round locking', () => {
       { id: 1, name: 'P1', bets: [{ id: 'b1', type: 'single', selection: [1], amount: 1 }], pool: 0, bank: 0 },
       { id: 2, name: 'P2', bets: [], pool: 0, bank: 0 }
     ]
-    const certs = await lockRound(players, house.privateKey, 'r1')
+    const certs = await lockRound(players, house.privateKey, 'r1', 'house-1')
     expect(certs).toHaveLength(2)
-    expect(certs[0].player).toBe('1')
+    expect(certs[0].seat).toBe(1)
   })
 })

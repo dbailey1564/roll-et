@@ -36,7 +36,7 @@ export default function House() {
   const [houseCert, setHouseCert] = React.useState<HouseCert | null>(null);
   const [joinQR, setJoinQR] = React.useState('');
   const [betCertQRs, setBetCertQRs] = React.useState<
-    Array<{ player: string; qr: string }>
+    Array<{ seat: number; qr: string }>
   >([]);
   const [newPlayerName, setNewPlayerName] = React.useState('');
   const [scanningJoinResp, setScanningJoinResp] = React.useState(false);
@@ -110,20 +110,26 @@ export default function House() {
         stake: p.bets.reduce((a, b) => a + b.amount, 0),
       })),
     });
-    const certs = await lockRound(players, houseKey.privateKey, roundId);
+    const certs = await lockRound(
+      players,
+      houseKey.privateKey,
+      roundId,
+      houseCert?.payload.houseId ?? 'house-1',
+    );
     const qrs = await Promise.all(
-      certs.map(async (c) => ({ player: c.player, qr: await betCertToQR(c) })),
+      certs.map(async (c) => ({ seat: c.seat, qr: await betCertToQR(c) })),
     );
     setBetCertQRs(qrs);
     setBetCerts(
       certs.reduce<Record<number, string>>((acc, c) => {
-        acc[Number(c.player)] = c.certId;
+        acc[c.seat] = c.certId;
         return acc;
       }, {}),
     );
     for (const c of certs) {
       await appendLedger('bet_cert_issued', roundId, {
-        player: c.player,
+        seat: c.seat,
+        playerUidThumbprint: c.playerUidThumbprint,
         certId: c.certId,
         betHash: c.betHash,
         exp: c.exp,
@@ -461,14 +467,14 @@ export default function House() {
         <section className="bets">
           <h3>Bet Certs</h3>
           {betCertQRs.map((b) => {
-            const seatId = Number(b.player);
+            const seatId = b.seat;
             const label = players.find((p) => p.id === seatId)?.name;
             return (
-              <div key={b.player}>
+              <div key={b.seat}>
                 <div>
                   {label ? `${label} (Seat ${seatId})` : `Seat ${seatId}`}
                 </div>
-                <img src={b.qr} alt={`bet cert ${b.player}`} />
+                <img src={b.qr} alt={`bet cert seat ${b.seat}`} />
               </div>
             );
           })}

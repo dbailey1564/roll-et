@@ -22,19 +22,29 @@ async function hashBets(bets: Bet[]): Promise<string> {
     .join('')
 }
 
-export async function lockRound(players: Player[], houseKey: CryptoKey, roundId: string): Promise<BetCert[]> {
+export async function lockRound(
+  players: Player[],
+  houseKey: CryptoKey,
+  roundId: string,
+  houseId: string,
+): Promise<BetCert[]> {
   const now = Date.now()
   const certs: BetCert[] = []
   for (const p of players) {
     const betHash = await hashBets(p.bets)
-    const cert = await generateBetCert({
-      certId: uuid(),
-      player: String(p.id),
-      round: roundId,
-      betHash,
-      nbf: now,
-      exp: now + 5 * 60 * 1000,
-    }, houseKey)
+    const cert = await generateBetCert(
+      {
+        certId: uuid(),
+        houseId,
+        roundId,
+        seat: p.id,
+        playerUidThumbprint: String(p.id),
+        betHash,
+        issuedAt: now,
+        exp: now + 5 * 60 * 1000,
+      },
+      houseKey,
+    )
     certs.push(cert)
   }
   return certs

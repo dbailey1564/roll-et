@@ -5,13 +5,16 @@ const encoder = new TextEncoder()
 
 export interface BetCertPayload {
   type: 'bet-cert'
+  houseId: string
+  roundId: string
+  seat: number
+  playerUidThumbprint: string
   certId: string
-  player: string
-  round: string
-  betHash: string
-  nbf: number
+  issuedAt: number
   exp: number
+  betHash: string
   bankRef?: string
+  renewalOf?: string
 }
 
 export interface BetCert extends BetCertPayload {
@@ -31,23 +34,45 @@ async function verifyPayload(payload: BetCertPayload, sig: string, key: CryptoKe
   return subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, signature, data)
 }
 
-export async function generateBetCert(params: Omit<BetCertPayload, 'type'>, key: CryptoKey): Promise<BetCert> {
-  const payload: BetCertPayload = { type: 'bet-cert', ...params }
+export async function generateBetCert(
+  params: Omit<BetCertPayload, 'type'>,
+  key: CryptoKey,
+): Promise<BetCert> {
+  const payload: BetCertPayload = {
+    type: 'bet-cert',
+    houseId: params.houseId,
+    roundId: params.roundId,
+    seat: params.seat,
+    playerUidThumbprint: params.playerUidThumbprint,
+    certId: params.certId,
+    issuedAt: params.issuedAt,
+    exp: params.exp,
+    betHash: params.betHash,
+    bankRef: params.bankRef,
+    renewalOf: params.renewalOf,
+  }
   const sig = await signPayload(payload, key)
   return { ...payload, sig }
 }
 
-export async function verifyBetCert(cert: BetCert, key: CryptoKey, now: number = Date.now()): Promise<boolean> {
-  if (now < cert.nbf || now > cert.exp) return false
+export async function verifyBetCert(
+  cert: BetCert,
+  key: CryptoKey,
+  now: number = Date.now(),
+): Promise<boolean> {
+  if (now < cert.issuedAt || now > cert.exp) return false
   const payload: BetCertPayload = {
     type: 'bet-cert',
+    houseId: cert.houseId,
+    roundId: cert.roundId,
+    seat: cert.seat,
+    playerUidThumbprint: cert.playerUidThumbprint,
     certId: cert.certId,
-    player: cert.player,
-    round: cert.round,
-    betHash: cert.betHash,
-    nbf: cert.nbf,
+    issuedAt: cert.issuedAt,
     exp: cert.exp,
+    betHash: cert.betHash,
     bankRef: cert.bankRef,
+    renewalOf: cert.renewalOf,
   }
   return verifyPayload(payload, cert.sig, key)
 }

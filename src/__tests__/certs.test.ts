@@ -26,14 +26,19 @@ describe('certificate flows', () => {
     const cert = await issueHouseCert(payload, root.privateKey)
     expect(await validateHouseCert(cert, root.publicKey)).toBe(true)
 
-    const betCert = await generateBetCert({
-      certId: 'abc',
-      player: 'p1',
-      round: 'r1',
-      betHash: 'hash',
-      nbf: Date.now() - 1000,
-      exp: Date.now() + 60_000
-    }, houseKeys.privateKey)
+    const betCert = await generateBetCert(
+      {
+        houseId: 'house-1',
+        roundId: 'r1',
+        seat: 1,
+        playerUidThumbprint: 'p1',
+        certId: 'abc',
+        betHash: 'hash',
+        issuedAt: Date.now() - 1000,
+        exp: Date.now() + 60_000,
+      },
+      houseKeys.privateKey,
+    )
     expect(await verifyBetCert(betCert, houseKeys.publicKey)).toBe(true)
 
       const receipt = await issueBankReceipt(
