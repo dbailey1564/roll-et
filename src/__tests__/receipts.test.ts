@@ -7,15 +7,18 @@ async function genKeyPair() { return subtle().generateKey({ name: 'ECDSA', named
 describe('bank receipts', () => {
   it('issues receipts for winners with correct values and references', async () => {
     const house = await genKeyPair()
-    const winners = [
-      { player: 1, value: 5, betCertRef: 'bet1' },
-      { player: 2, value: 3, betCertRef: 'bet2' },
-    ]
-    const receipts = await issueReceiptsForWinners(winners, 'round1', (house as CryptoKeyPair).privateKey)
-    expect(receipts).toHaveLength(2)
-    expect(receipts[0].receipt.value).toBe(5)
-    expect(receipts[0].receipt.betCertRef).toBe('bet1')
-    expect(receipts[1].receipt.value).toBe(3)
-    expect(receipts[1].receipt.betCertRef).toBe('bet2')
+      const winners = [
+        { player: 1, playerUidThumbprint: 'p1', amount: 5, kind: 'REBUY' as const },
+        { player: 2, playerUidThumbprint: 'p2', amount: 3, kind: 'REBUY' as const },
+      ]
+      const receipts = await issueReceiptsForWinners(
+        winners,
+        'round1',
+        'house-1',
+        (house as CryptoKeyPair).privateKey
+      )
+      expect(receipts).toHaveLength(2)
+      expect(receipts[0].receipt.amount).toBe(5)
+      expect(receipts[1].receipt.amount).toBe(3)
+    })
   })
-})

@@ -18,21 +18,25 @@ function uuid(): string {
 }
 
 export async function issueReceiptsForWinners(
-  winners: Array<{ player: number; value: number; betCertRef: string }>,
+  winners: Array<{ player: number; playerUidThumbprint: string; amount: number; kind: 'REDEEM' | 'REBUY' }>,
   roundId: string,
+  houseId: string,
   key: CryptoKey
 ): Promise<ReceiptRecord[]> {
   const now = Date.now()
   const receipts: ReceiptRecord[] = []
   for (const w of winners) {
-    const receipt = await issueBankReceipt({
-      receiptId: uuid(),
-      player: String(w.player),
-      round: roundId,
-      value: w.value,
-      nbf: now,
-      betCertRef: w.betCertRef,
-    }, key)
+    const receipt = await issueBankReceipt(
+      {
+        receiptId: uuid(),
+        houseId,
+        playerUidThumbprint: w.playerUidThumbprint,
+        kind: w.kind,
+        amount: w.amount,
+        issuedAt: now,
+      },
+      key
+    )
     const qr = await bankReceiptToQR(receipt)
     const spendCode = await computeReceiptSpendCode(receipt)
     receipts.push({ player: String(w.player), receipt, qr, spendCode })
