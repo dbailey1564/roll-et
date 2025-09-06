@@ -36,15 +36,18 @@ describe('certificate flows', () => {
     }, houseKeys.privateKey)
     expect(await verifyBetCert(betCert, houseKeys.publicKey)).toBe(true)
 
-    const receipt = await issueBankReceipt({
-      receiptId: 'r1',
-      player: 'p1',
-      round: 'r1',
-      value: 100,
-      nbf: Date.now() - 1000,
-      exp: Date.now() + 60_000,
-      betCertRef: betCert.certId
-    }, houseKeys.privateKey)
-    expect(await verifyBankReceipt(receipt, houseKeys.publicKey)).toBe(true)
+      const receipt = await issueBankReceipt(
+        {
+          houseId: 'house-1',
+          playerUidThumbprint: 'p1',
+          receiptId: 'r1',
+          kind: 'REBUY',
+          amount: 100,
+          issuedAt: Date.now() - 1000,
+          exp: Date.now() + 60_000,
+        },
+        houseKeys.privateKey
+      )
+      expect(await verifyBankReceipt(receipt, houseKeys.publicKey)).toBe(true)
   })
 })

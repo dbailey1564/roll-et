@@ -14,15 +14,18 @@ vi.mock('jsqr', () => ({ default: vi.fn(() => ({ data: mockData })) }))
 describe('BankReceiptScanner', () => {
   it('accepts a valid receipt', async () => {
     const house = await genKeyPair()
-    const receipt = await issueBankReceipt({
-      receiptId: 'r1',
-      player: 'p1',
-      round: 'rd1',
-      value: 100,
-      nbf: Date.now() - 1000,
-      exp: Date.now() + 60000,
-      betCertRef: 'c1',
-    }, (house as CryptoKeyPair).privateKey)
+      const receipt = await issueBankReceipt(
+        {
+          houseId: 'h1',
+          playerUidThumbprint: 'p1',
+          receiptId: 'r1',
+          kind: 'REBUY',
+          amount: 100,
+          issuedAt: Date.now() - 1000,
+          exp: Date.now() + 60000,
+        },
+        (house as CryptoKeyPair).privateKey
+      )
     mockData = JSON.stringify(receipt)
 
     Object.defineProperty(navigator, 'mediaDevices', {
@@ -50,15 +53,18 @@ describe('BankReceiptScanner', () => {
   it('rejects an invalid receipt', async () => {
     const goodHouse = await genKeyPair()
     const badHouse = await genKeyPair()
-    const receipt = await issueBankReceipt({
-      receiptId: 'r1',
-      player: 'p1',
-      round: 'rd1',
-      value: 100,
-      nbf: Date.now() - 1000,
-      exp: Date.now() + 60000,
-      betCertRef: 'c1',
-    }, (goodHouse as CryptoKeyPair).privateKey)
+      const receipt = await issueBankReceipt(
+        {
+          houseId: 'h1',
+          playerUidThumbprint: 'p1',
+          receiptId: 'r1',
+          kind: 'REBUY',
+          amount: 100,
+          issuedAt: Date.now() - 1000,
+          exp: Date.now() + 60000,
+        },
+        (goodHouse as CryptoKeyPair).privateKey
+      )
     mockData = JSON.stringify(receipt)
 
     Object.defineProperty(navigator, 'mediaDevices', {
