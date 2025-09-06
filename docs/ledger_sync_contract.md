@@ -42,12 +42,15 @@ Every ledger entry is a hash-chained object:
   "prevHash": string|null,
   "type": string,
   "payload": object,
-  "ts": number            // milliseconds since epoch
+  "ts": number,           // milliseconds since epoch
+  "sig"?: string,         // ECDSA-P256 signature (checkpoint entries only)
+  "merkleRoot"?: string   // root of entries since last checkpoint
 }
 ```
 
 - `entryId` hashes the prior hash, event type, payload and timestamp.
 - `prevHash` links to the previous `entryId`, creating a tamper-evident chain.
+- `sig` and `merkleRoot` appear only on **checkpoint** entries and are covered by the `entryId` hash.
 - `ts` records when the entry was appended.
 
 ### Ledger Event Payloads
@@ -75,7 +78,9 @@ Event types and their payload fields:
 
 ## Checkpoints & Signed Sync Export
 
-- **Checkpoint entries:** Special ledger records marking the last synced `entryId`. They anchor future batches and remain in the hash chain.
+- **Hybrid checkpointing:** Entries are hash-chained, while periodic checkpoints capture groups of entries for signature.
+  - Checkpoints occur at `round_locked`, `round_settled`, `session_closed`, and `sync_export` events.
+  - Each checkpoint entry includes `sig` and `merkleRoot` fields, enabling selective proof of any covered entry.
 - **SyncExportHeader:** Before upload, the House signs a header containing the current House Cert `kid`, range (`startEntryId` → `endEntryId`), and a timestamp. Backend verifies the signature against the presented House Cert before accepting the batch.
 
 ## House Certificate Lifecycle & Sync Eligibility
@@ -107,7 +112,7 @@ Event types and their payload fields:
 ## Security Invariants
 
 - **License gating:** Sync only accepted from Houses with active Certificates.
-- **Non-forgeability:** Entries signed by House private key; backend rejects unsigned or invalid.
+- **Non-forgeability:** Checkpoint entries are signed by the House private key, and all intermediate entries must hash-chain to a signed checkpoint; invalid signatures or chains are rejected.
 - **Immutability:** Once synced, entries cannot be altered or deleted.
 - **Privacy:** Player IDs are pseudonymous, per-House; no PII in global ledger.
 
