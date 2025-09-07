@@ -8,11 +8,9 @@ import {
 } from '../join';
 
 interface JoinScannerProps {
-  alias: string;
   playerKeys: CryptoKeyPair;
   rootKey: CryptoKey;
   seat?: number;
-  bankRef?: string;
   onResponse: (resp: JoinResponse) => void;
   onResponseEx?: (
     resp: JoinResponse,
@@ -21,11 +19,9 @@ interface JoinScannerProps {
 }
 
 export default function JoinScanner({
-  alias,
   playerKeys,
   rootKey,
   seat = 0,
-  bankRef,
   onResponse,
   onResponseEx,
 }: JoinScannerProps) {
@@ -111,11 +107,9 @@ export default function JoinScanner({
         return;
       }
       const resp = await createJoinResponse(
-        alias,
         challenge,
         playerKeys,
         seat,
-        bankRef,
       );
       onResponse(resp);
       if (typeof onResponseEx === 'function') {
