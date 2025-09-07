@@ -70,7 +70,6 @@ describe('JoinScanner fallback', () => {
 
     const { container } = render(
       <JoinScanner
-        alias="p1"
         playerKeys={player as CryptoKeyPair}
         rootKey={root.publicKey}
         onResponse={onResponse}

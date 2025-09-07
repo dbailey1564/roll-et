@@ -4,6 +4,7 @@ import { bytesToBase64Url, base64UrlToBytes } from './utils/base64';
 
 const subtle = globalThis.crypto.subtle;
 const encoder = new TextEncoder();
+const decoder = new TextDecoder();
 
 export interface JoinChallenge {
   type: 'join-challenge';
@@ -14,18 +15,25 @@ export interface JoinChallenge {
   exp: number;
 }
 
+export type JoinChallengeEncoded = Omit<JoinChallenge, 'houseCert'> & {
+  houseCert: string;
+};
+
 export async function createJoinChallenge(
   houseCert: HouseCert,
   round: string,
   ttlMs: number = 15000,
-): Promise<JoinChallenge> {
+): Promise<JoinChallengeEncoded> {
   const nonceArr = new Uint8Array(16);
   globalThis.crypto.getRandomValues(nonceArr);
   const nonce = bytesToBase64Url(nonceArr);
   const now = Date.now();
+  const cert = bytesToBase64Url(
+    encoder.encode(JSON.stringify(houseCert)),
+  );
   return {
     type: 'join-challenge',
-    houseCert,
+    houseCert: cert,
     round,
     nonce,
     nbf: now,
@@ -34,22 +42,46 @@ export async function createJoinChallenge(
 }
 
 export async function joinChallengeToQR(
-  challenge: JoinChallenge,
+  challenge: JoinChallenge | JoinChallengeEncoded,
 ): Promise<string> {
-  return QRCode.toDataURL(JSON.stringify(challenge));
+  const payload =
+    typeof (challenge as any).houseCert === 'string'
+      ? (challenge as JoinChallengeEncoded)
+      : {
+          ...(challenge as JoinChallenge),
+          houseCert: bytesToBase64Url(
+            encoder.encode(
+              JSON.stringify((challenge as JoinChallenge).houseCert),
+            ),
+          ),
+        };
+  return QRCode.toDataURL(JSON.stringify(payload));
 }
 
 export function parseJoinChallenge(str: string): JoinChallenge {
-  return JSON.parse(str) as JoinChallenge;
+  const parsed = JSON.parse(str) as JoinChallengeEncoded;
+  const certBytes = base64UrlToBytes(parsed.houseCert);
+  return {
+    ...parsed,
+    houseCert: JSON.parse(decoder.decode(certBytes)) as HouseCert,
+  };
 }
 
 export async function validateJoinChallenge(
-  challenge: JoinChallenge,
+  challenge: JoinChallenge | JoinChallengeEncoded,
   rootKey: CryptoKey,
   now: number = Date.now(),
 ): Promise<boolean> {
+  const cert =
+    typeof (challenge as any).houseCert === 'string'
+      ? (JSON.parse(
+          decoder.decode(
+            base64UrlToBytes((challenge as JoinChallengeEncoded).houseCert),
+          ),
+        ) as HouseCert)
+      : (challenge as JoinChallenge).houseCert;
   if (now < challenge.nbf || now > challenge.exp) return false;
-  return validateHouseCert(challenge.houseCert, rootKey, now);
+  return validateHouseCert(cert, rootKey, now);
 }
 
 export interface JoinResponsePayload {
@@ -58,11 +90,9 @@ export interface JoinResponsePayload {
   round: string;
   seat: number;
   nonce: string;
-  bankRef?: string;
 }
 
 export interface JoinResponse extends JoinResponsePayload {
-  alias?: string;
   sig: string;
 }
 
@@ -80,11 +110,9 @@ async function derivePlayerUid(
 }
 
 export async function createJoinResponse(
-  alias: string,
   challenge: JoinChallenge,
   keys: CryptoKeyPair,
   seat: number = 0,
-  bankRef?: string,
 ): Promise<JoinResponse> {
   const playerPubKey = (await subtle.exportKey(
     'jwk',
@@ -100,7 +128,6 @@ export async function createJoinResponse(
     round: challenge.round,
     seat,
     nonce: challenge.nonce,
-    bankRef,
   };
   const sigBuf = await subtle.sign(
     { name: 'ECDSA', hash: 'SHA-256' },
@@ -108,7 +135,7 @@ export async function createJoinResponse(
     encoder.encode(JSON.stringify(payload)),
   );
   const sig = bytesToBase64Url(new Uint8Array(sigBuf));
-  return { ...payload, alias, sig };
+  return { ...payload, sig };
 }
 
 export async function verifyJoinResponse(
@@ -136,7 +163,6 @@ export async function verifyJoinResponse(
       round: response.round,
       seat: response.seat,
       nonce: response.nonce,
-      bankRef: response.bankRef,
     };
     const sigBytes = base64UrlToBytes(response.sig);
     const payloadData = encoder.encode(JSON.stringify(payload));

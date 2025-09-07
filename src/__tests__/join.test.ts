@@ -3,6 +3,7 @@ import {
   createJoinChallenge,
   createJoinResponse,
   verifyJoinResponse,
+  parseJoinChallenge,
 } from '../join';
 import { base64UrlToBytes, bytesToBase64Url } from '../utils/base64';
 
@@ -18,26 +19,29 @@ async function genPlayerKeys() {
 describe('verifyJoinResponse', () => {
   it('accepts a valid response', async () => {
     const houseCert: any = { payload: { houseId: 'h1' }, signature: '' };
-    const challenge = await createJoinChallenge(houseCert, 'r1');
+    const encoded = await createJoinChallenge(houseCert, 'r1');
+    const challenge = parseJoinChallenge(JSON.stringify(encoded));
     const playerKeys = await genPlayerKeys();
-    const response = await createJoinResponse('player1', challenge, playerKeys);
+    const response = await createJoinResponse(challenge, playerKeys);
     expect(await verifyJoinResponse(response, challenge)).toBe(true);
   });
 
   it('rejects when challenge fields mismatch', async () => {
     const houseCert: any = { payload: { houseId: 'h1' }, signature: '' };
-    const challenge = await createJoinChallenge(houseCert, 'r1');
+    const encoded = await createJoinChallenge(houseCert, 'r1');
+    const challenge = parseJoinChallenge(JSON.stringify(encoded));
     const playerKeys = await genPlayerKeys();
-    const response = await createJoinResponse('player1', challenge, playerKeys);
+    const response = await createJoinResponse(challenge, playerKeys);
     const badChallenge = { ...challenge, nonce: challenge.nonce + 'x' };
     expect(await verifyJoinResponse(response, badChallenge)).toBe(false);
   });
 
   it('rejects with invalid signature', async () => {
     const houseCert: any = { payload: { houseId: 'h1' }, signature: '' };
-    const challenge = await createJoinChallenge(houseCert, 'r1');
+    const encoded = await createJoinChallenge(houseCert, 'r1');
+    const challenge = parseJoinChallenge(JSON.stringify(encoded));
     const playerKeys = await genPlayerKeys();
-    const response = await createJoinResponse('player1', challenge, playerKeys);
+    const response = await createJoinResponse(challenge, playerKeys);
     const bytes = base64UrlToBytes(response.sig);
     bytes[0] ^= 0xff; // flip first byte
     const tamperedSig = bytesToBase64Url(bytes);

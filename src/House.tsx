@@ -15,7 +15,7 @@ import type { HouseCert } from './certs/houseCert';
 import {
   createJoinChallenge,
   joinChallengeToQR,
-  type JoinChallenge,
+  parseJoinChallenge,
   verifyJoinResponse,
 } from './join';
 import { betCertToQR } from './betCertQR';
@@ -42,8 +42,9 @@ export default function House() {
   const [scanningJoinResp, setScanningJoinResp] = React.useState(false);
   const [scanningSpend, setScanningSpend] = React.useState(false);
   const [spendCodeInput, setSpendCodeInput] = React.useState('');
-  const [lastChallenge, setLastChallenge] =
-    React.useState<JoinChallenge | null>(null);
+  const [lastChallenge, setLastChallenge] = React.useState<
+    ReturnType<typeof parseJoinChallenge> | null
+  >(null);
   const [keyMismatch, setKeyMismatch] = React.useState(false);
   const [scanningPair, setScanningPair] = React.useState(false);
   const [totpInput, setTotpInput] = React.useState('');
@@ -141,19 +142,19 @@ export default function House() {
 
   const makeJoinQR = async () => {
     if (!houseCert) return;
-    const challenge = await createJoinChallenge(
+    const challengeEnc = await createJoinChallenge(
       houseCert,
       String(stats.rounds + 1),
     );
     await appendLedger('join_challenge_issued', {
-      round: challenge.round,
-      nonce: challenge.nonce,
-      nbf: challenge.nbf,
-      exp: challenge.exp,
+      round: challengeEnc.round,
+      nonce: challengeEnc.nonce,
+      nbf: challengeEnc.nbf,
+      exp: challengeEnc.exp,
     });
-    const qr = await joinChallengeToQR(challenge);
+    const qr = await joinChallengeToQR(challengeEnc);
     setJoinQR(qr);
-    setLastChallenge(challenge);
+    setLastChallenge(parseJoinChallenge(JSON.stringify(challengeEnc)));
   };
 
   const addSeat = async () => {
@@ -403,29 +404,23 @@ export default function House() {
                 (_, i) => i + 1,
               ).find((n) => !occupied.has(n));
               if (seat) {
-                const alias = resp.alias || resp.playerUid;
                 setPlayers((prev) =>
                   [
                     ...prev,
                     {
                       seat,
                       uid: resp.playerUid,
-                      name: alias,
+                      name: resp.playerUid,
                       bets: [],
                       pool: PER_ROUND_POOL,
                       bank: 0,
-                      bankRef: resp.bankRef,
                     },
                   ].sort((a, b) => a.seat - b.seat),
                 );
-                const buyIn = resp.bankRef
-                  ? (receipts.find((r) => r.receipt.receiptId === resp.bankRef)
-                      ?.receipt.amount ?? PER_ROUND_POOL)
-                  : PER_ROUND_POOL;
                 await appendLedger('admission', {
                   roundId: String(stats.rounds + 1),
                   playerUidThumbprint: resp.playerUid,
-                  buyIn,
+                  buyIn: PER_ROUND_POOL,
                   nonce: resp.nonce,
                 });
               } else {

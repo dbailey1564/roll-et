@@ -63,7 +63,6 @@ export function useJoin() {
   const joinScannerProps = React.useMemo(() => {
     if (!playerKeys || !rootKey) return null;
     return {
-      alias: playerId || 'Player',
       playerKeys,
       rootKey,
       onResponse: async (resp: JoinResponse) => {
@@ -94,7 +93,7 @@ export function useJoin() {
         setJoinTotp(code);
       },
     };
-  }, [playerId, playerKeys, playerSecret, rootKey]);
+  }, [playerKeys, playerSecret, rootKey]);
 
   const showPairingCode = React.useCallback(async () => {
     if (!playerSecret) return;
