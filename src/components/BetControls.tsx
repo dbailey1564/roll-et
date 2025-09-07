@@ -19,6 +19,8 @@ interface Props {
   setEnteredRoll: (n: number | '') => void;
   settleRound: () => void;
   newRound: () => void;
+  receiptKind: 'REDEEM' | 'REBUY';
+  setReceiptKind: (k: 'REDEEM' | 'REBUY') => void;
 }
 
 export function BetControls({
@@ -37,6 +39,8 @@ export function BetControls({
   setEnteredRoll,
   settleRound,
   newRound,
+  receiptKind,
+  setReceiptKind,
 }: Props) {
   const canPlaceActive =
     roundState === 'open' && amount >= minBet && amount <= active.pool;
@@ -103,6 +107,20 @@ export function BetControls({
         <button onClick={lockRound} disabled={roundState !== 'open'}>
           Lock Bets
         </button>
+        <div className="receipt-kind">
+          <label>
+            Receipt:
+            <select
+              value={receiptKind}
+              onChange={(e) =>
+                setReceiptKind(e.target.value as 'REDEEM' | 'REBUY')
+              }
+            >
+              <option value="REBUY">Rebuy</option>
+              <option value="REDEEM">Redeem</option>
+            </select>
+          </label>
+        </div>
         <div className="manual-roll">
           <input
             type="number"

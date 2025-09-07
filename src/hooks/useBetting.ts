@@ -57,6 +57,14 @@ export function useBetting() {
     setAmount((a) => clampInt(a, MIN_BET, maxForActive));
   }, [active?.pool]);
 
+  const [receiptKinds, setReceiptKinds] = React.useState<
+    Record<number, 'REDEEM' | 'REBUY'>
+  >({});
+  const receiptKind = active ? receiptKinds[active.seat] || 'REBUY' : 'REBUY';
+  const setReceiptKind = (k: 'REDEEM' | 'REBUY') => {
+    if (active) setReceiptKinds((prev) => ({ ...prev, [active.seat]: k }));
+  };
+
   const canPlace = (p: Player) =>
     roundState === 'open' && amount >= MIN_BET && amount <= p.pool;
 
@@ -176,7 +184,7 @@ export function useBetting() {
           player: p.seat,
           playerUidThumbprint: p.uid,
           amount: deltas[p.seat],
-          kind: 'REBUY' as const,
+          kind: receiptKinds[p.seat] || 'REBUY',
         }));
       const roundId = String(stats.rounds + 1);
       const houseId = 'house-1';
@@ -195,6 +203,7 @@ export function useBetting() {
           playerUidThumbprint: w.playerUidThumbprint,
           amount: w.amount,
           receiptId: rec?.receipt.receiptId,
+          kind: w.kind,
         });
       }
     }
@@ -236,6 +245,8 @@ export function useBetting() {
     active,
     activeId,
     setActiveId,
+    receiptKind,
+    setReceiptKind,
     maxForActive,
     canPlace,
     addBetFor,

@@ -25,6 +25,8 @@ export default function App() {
     covered,
     active,
     setActiveId,
+    receiptKind,
+    setReceiptKind,
     maxForActive,
     undoLast,
     clearBets,
@@ -92,6 +94,8 @@ export default function App() {
         setEnteredRoll={setEnteredRoll}
         settleRound={settleRound}
         newRound={newRound}
+        receiptKind={receiptKind}
+        setReceiptKind={setReceiptKind}
       />
 
       <BetBoard
