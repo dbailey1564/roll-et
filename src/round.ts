@@ -42,6 +42,7 @@ export async function lockRound(
         betHash,
         issuedAt: now,
         exp: now + 5 * 60 * 1000,
+        bankRef: p.bankRef,
       },
       houseKey,
     );

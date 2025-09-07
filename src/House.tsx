@@ -134,6 +134,7 @@ export default function House() {
         certId: c.certId,
         betHash: c.betHash,
         exp: c.exp,
+        bankRef: c.bankRef,
       });
     }
   };
@@ -413,6 +414,7 @@ export default function House() {
                       bets: [],
                       pool: PER_ROUND_POOL,
                       bank: 0,
+                      bankRef: resp.bankRef,
                     },
                   ].sort((a, b) => a.seat - b.seat),
                 );
