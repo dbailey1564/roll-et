@@ -4,6 +4,9 @@ export interface Env {
 
   // Optional non-secret config
   HOUSE_PUB_KEY_PEM?: string; // Public key PEM for JWKS endpoint
+
+  // KV for replay protection / join tokens
+  CERT_LEDGER: KVNamespace;
 }
 
 type Json = Record<string, unknown> | unknown[] | string | number | boolean | null;
@@ -29,11 +32,32 @@ async function handleHealth() {
   return json({ ok: true });
 }
 
-async function handleHouseCert(_req: Request, _env: Env) {
+async function handleHouseCert(req: Request, env: Env) {
   // Placeholder endpoint. Implement ECDSA-P256 signing of a short-lived, round-bound Bet Cert.
   // Expected input example: { joinToken: string, roundId: string, payload?: object }
   // Validate joinToken (short-lived, one-time), check replay via ledger, then sign payload.
-  return json({ error: "Not implemented yet" }, { status: 501 });
+  try {
+    const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+    const joinToken = typeof body["joinToken"] === "string" ? (body["joinToken"] as string) : undefined;
+    const roundId = typeof body["roundId"] === "string" ? (body["roundId"] as string) : undefined;
+
+    if (!joinToken || !roundId) {
+      return json({ error: "joinToken and roundId required" }, { status: 400 });
+    }
+
+    // Basic best-effort replay guard using KV (non-atomic; for strict protection use DO/D1)
+    const key = `jt:${roundId}:${joinToken}`;
+    const seen = await env.CERT_LEDGER.get(key);
+    if (seen) {
+      return json({ error: "replay detected" }, { status: 409 });
+    }
+    await env.CERT_LEDGER.put(key, "1", { expirationTtl: 600 });
+
+    // Signing not yet implemented
+    return json({ error: "Not implemented yet", kvRecorded: true }, { status: 501 });
+  } catch (e) {
+    return json({ error: "invalid request", detail: String(e) }, { status: 400 });
+  }
 }
 
 export default {
@@ -48,4 +72,3 @@ export default {
     return json({ error: "Not found" }, { status: 404 });
   },
 };
-
