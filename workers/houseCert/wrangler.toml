@@ -18,5 +18,5 @@ compatibility_date = "2024-09-10"
 # KV namespace for join-token usage and basic replay protection
 binding = "CERT_LEDGER"
 id = "db2b30f346794573a54f42225cc94669"
-# preview_id can be set to a dev KV namespace to avoid writing to prod during `wrangler dev`.
-# preview_id = "<your-dev-namespace-id>"
+# Use dev KV namespace when running `wrangler dev`
+preview_id = "378e25f7c27f4e718d851cb14b7a6f7a"
