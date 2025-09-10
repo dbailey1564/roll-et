@@ -104,7 +104,6 @@ interface HouseCert {
 
 - **Eligibility:** Sync accepted only if the submitting House presents a **currently active** Cert.
 - **Scope:** House uploads an append‑only ledger of rounds, admissions, bets, outcomes, settlements, and receipt states.
-- **Normalization:** Backend enforces the **$1,440 max per player per round** ceiling in aggregated analytics.
 - **Auditability:** Each sync batch references the issuing Cert identity for traceability.
 
 ## Error Semantics (UX + Outcomes)
@@ -117,7 +116,6 @@ interface HouseCert {
 ## Security Invariants
 
 - **Offline verifiability:** Players must be able to validate the Cert without internet.
-- **No secrets in QR:** Cert and nonces only; no private material leaves the House device(s).
 - **Non‑forgeability:** Only Root can issue Certs; only House private key can sign artifacts under that Cert.
 - **Time correctness:** Join timing relies on House’s broadcast time anchor; Cert validity uses local time with ±5 min drift tolerance.
 - **Scope control:** Cert capabilities are explicit and minimal; features outside the set are denied by default.
