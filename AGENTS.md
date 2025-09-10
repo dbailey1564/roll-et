@@ -17,7 +17,6 @@ Authoritative instructions for Codex Cloud when working on **dbailey1564/roll-et
 
 **Security**
 - ECDSA-P256 only.
-- No secrets in QR or client bundles.
 - Join Tokens: short-lived, one-time. Bet Certs: encrypted, round-bound, expiring.
 - Replay protection via ledger.
 
