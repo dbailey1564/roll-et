@@ -5,7 +5,6 @@ Authoritative instructions for Codex Cloud when working on **dbailey1564/roll-et
 
 ## Working directory
 - **Repo root:** `/workspace/roll-et`
-- **Edit only:** `src/**`, `docs/**`, tests in `src/__tests__/**`
 - **Never edit:** `dist/`, `node_modules/`
 
 ## Agents & Trust
