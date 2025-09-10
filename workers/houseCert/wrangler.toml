@@ -1,0 +1,16 @@
+# Cloudflare Worker project for issuing House Bet Certificates
+name = "house-cert"
+main = "src/index.ts"
+compatibility_date = "2024-09-10"
+
+# If you prefer explicit account binding, uncomment and set your account_id.
+# You are logged in; wrangler can infer this from your session.
+# account_id = "" # e.g., 6bbfd1f7f411d4a625d32beed6a766b9 (non-secret)
+
+[vars]
+# Optional: Provide a precomputed JWKS or public key PEM via vars for /.well-known/jwks.json
+# HOUSE_PUB_KEY_PEM = "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----\n"
+
+# Secrets are set with `wrangler secret put NAME` and not stored in code.
+# HOUSE_PRIV_KEY_PEM (secret) should be set before deploying.
+
