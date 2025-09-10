@@ -28,3 +28,6 @@ pnpm-debug.log*
 
 # Misc
 .DS_Store
+
+# IDE settings
+.vscode/
