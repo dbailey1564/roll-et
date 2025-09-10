@@ -12,7 +12,9 @@
     "docs:flow": "mmdc -p docs/puppeteer.config.json -i docs/flowchart.mmd -o docs/flowchart.svg",
     "docs:flow:png": "mmdc -p docs/puppeteer.config.json -i docs/flowchart.mmd -o docs/flowchart.png",
     "lint": "eslint . --ext .ts,.tsx --config .eslintrc",
-    "format": "prettier . --write"
+    "format": "prettier . --write",
+    "cf:dev:house": "wrangler dev -c workers/houseCert/wrangler.toml",
+    "cf:deploy:house": "wrangler deploy -c workers/houseCert/wrangler.toml"
   },
   "dependencies": {
     "jsqr": "^1.4.0",
@@ -22,7 +24,7 @@
     "react-router-dom": "^7.8.1"
   },
   "devDependencies": {
-    "@mermaid-js/mermaid-cli": "^10.9.1",
+    "@mermaid-js/mermaid-cli": "^11.9.0",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
