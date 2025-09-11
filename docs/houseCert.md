@@ -33,3 +33,11 @@ Notes
 
 - Do not commit secrets. Use `wrangler secret` for private keys.
 - JWKS is computed from the secret signing key; no public key vars required.
+
+Local Keys (development)
+
+- For local tooling only (outside the deployed worker), you may keep key material in a local, gitignored folder such as `.sec/`.
+- If you use helper scripts, prefer passing key material via environment variables and writing to `.sec/` locally:
+  - `ROOT_PUBLIC_JWK`: JSON Web Key (JWK) for the Root Authority public key used to validate House Certificates.
+  - `ROOT_PRIVATE_KEY`: PKCS#8 PEM for the Root Authority private key (only on machines that mint House Certificates; never commit).
+- These variables are not required by the PWA build or the worker runtime; they are purely for local development workflows and should never be checked into source control.
