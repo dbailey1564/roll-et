@@ -36,5 +36,8 @@ The PWA caches assets and app data so rounds can run without connectivity. Ledge
 
 1. **Authority URL:** set `VITE_AUTH_URL` to the backend base URL (e.g. via a `.env` file). If unset, `syncWithAuthority` simply marks ledger entries as synced locally for development.
 2. **Root public key & ledger:** replace the placeholder `houseCertRootPublicKeyJwk` and populate `authorizedHouseCertLedger` in [`src/certs/authorizedHouseCertLedger.ts`](../src/certs/authorizedHouseCertLedger.ts) with certificates issued by the root authority.
+3. **Local key material (dev only):** if you script local setup, prefer using environment variables and a gitignored folder such as `.sec/` to hold keys:
+   - `ROOT_PUBLIC_JWK`: JSON Web Key (JWK) for the Root Authority public key.
+   - `ROOT_PRIVATE_KEY`: PKCS#8 PEM for the Root Authority private key (only where you mint House Certificates). Never commit these.
 
-Placeholder keys and an empty ledger should never ship to production; provide real values before deploying.
+Placeholder keys and an empty ledger should never ship to production; provide real values before deploying. Never commit private keys; keep any local key material under a gitignored path like `.sec/`.
